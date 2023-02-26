@@ -4,6 +4,10 @@ import (
 	"time"
 )
 
+type BridgeConfig struct {
+	Url string
+}
+
 type TssConfig struct {
 	// Party Timeout defines how long do we wait for the party to form
 	PartyTimeout time.Duration

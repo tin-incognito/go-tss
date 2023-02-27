@@ -4,15 +4,16 @@ services:
   tss0:
     hostname: tss0
     ports:
-      - 8080:8080
-      - 6668:6668
+      - 4000:8080
+      - 4100:6668
     build:
       context: ../
       dockerfile: Dockerfile
     #image: registry.gitlab.com/thorchain/tss/go-tss
     restart: unless-stopped
     environment:
-      - PRIVKEY=${TSS_0}
+      #- PRIVKEY=${TSS_0}
+      - PRIVKEY=ZThiMDAxOTk2MDc4ODk3YWE0YThlMjdkMWY0NjA1MTAwZDgyNDkyYzdhNmMwZWQ3MDBhMWIyMjNmNGMzYjVhYg==
       - NET=testnet
     command: /go/bin/start.bash
     networks:
@@ -22,15 +23,15 @@ services:
   tss1:
     hostname: tss1
     ports:
-      - 8081:8080
-      - 6669:6668
+      - 4001:8080
+      - 4101:6668
     build:
       context: ../
       dockerfile: Dockerfile
     #image: registry.gitlab.com/thorchain/tss/go-tss
     restart: unless-stopped
     environment:
-      - PRIVKEY=${TSS_1}
+      - PRIVKEY=ZTc2ZjI5OTIwOGVlMDk2N2M3Yzc1MjYyODQ0OGUyMjE3NGJiOGRmNGQyZmVmODg0NzQwNmUzYTk1YmQyODlmNA==
       - NET=testnet
     depends_on:
       - tss0
@@ -42,15 +43,15 @@ services:
   tss2:
     hostname: tss2
     ports:
-      - 8082:8080
-      - 6667:6668
+      - 4002:8080
+      - 4102:6668
     build:
       context: ../
       dockerfile: Dockerfile
     #image: registry.gitlab.com/thorchain/tss/go-tss
     restart: unless-stopped
     environment:
-      - PRIVKEY=${TSS_2}
+      - PRIVKEY=MjQ1MDc2MmM4MjU5YjRhZjhhNmFjMmI0ZDBkNzBkOGE1ZTBmNDQ5NGI4NzM4OTYyM2E3MmI0OWMzNmE1ODZhNw==
       - NET=testnet
     depends_on:
       - tss0
@@ -61,15 +62,15 @@ services:
   tss3:
     hostname: tss3
     ports:
-      - 8083:8080
-      - 6666:6668
+      - 4003:8080
+      - 4103:6668
     build:
       context: ../
       dockerfile: Dockerfile
     #image: registry.gitlab.com/thorchain/tss/go-tss
     restart: unless-stopped
     environment:
-      - PRIVKEY=${TSS_3}
+      - PRIVKEY=YmNiMzA2ODU1NWNjMzk3NDE1OWMwMTM3MDU0NTNjN2YwMzYzZmVhZDE5NmU3NzRhOTMwOWIxN2QyZTQ0MzdkNg==
       - NET=testnet
     depends_on:
       - tss0

@@ -16,6 +16,7 @@ import (
 
 	"gitlab.com/thorchain/tss/go-tss/common"
 	"gitlab.com/thorchain/tss/go-tss/conversion"
+	"gitlab.com/thorchain/tss/go-tss/network"
 	"gitlab.com/thorchain/tss/go-tss/p2p"
 	"gitlab.com/thorchain/tss/go-tss/tss"
 )
@@ -29,8 +30,9 @@ var (
 )
 
 func main() {
+
 	// Parse the cli into configuration structs
-	tssConf, p2pConf := parseFlags()
+	tssConf, p2pConf, bConf := parseFlags()
 	if help {
 		flag.PrintDefaults()
 		return
@@ -77,6 +79,22 @@ func main() {
 			fmt.Println(err)
 		}
 	}()
+
+	signer, err := network.NewSigner(tss, bConf.BlockUrl, bConf.StateUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := signer.Start(); err != nil {
+		log.Fatal(err)
+	}
+	observer, err := network.NewObserver()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := observer.Start(); err != nil {
+		log.Fatal(err)
+	}
+
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
@@ -85,7 +103,7 @@ func main() {
 }
 
 // parseFlags - Parses the cli flags
-func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config) {
+func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.BridgeConfig) {
 	// we setup the configure for the general configuration
 	flag.StringVar(&tssAddr, "tss-port", "127.0.0.1:8080", "tss port")
 	flag.BoolVar(&help, "h", false, "Display Help")
@@ -105,6 +123,8 @@ func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config) {
 	flag.IntVar(&p2pConf.Port, "p2p-port", 6668, "listening port local")
 	flag.StringVar(&p2pConf.ExternalIP, "external-ip", "", "external IP of this node")
 	flag.Var(&p2pConf.BootstrapPeers, "peer", "Adds a peer multiaddress to the bootstrap list")
+	flag.StringVar(&bConf.BlockUrl, "bridge-block-url", "http://localhost:26657", "url for bridge chain")
+	flag.StringVar(&bConf.StateUrl, "bridge-state-url", "http://localhost:1317", "url for bridge chain")
 	flag.Parse()
 	return
 }

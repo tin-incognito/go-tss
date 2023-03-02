@@ -18,6 +18,7 @@ func main() {
 	password := flag.String("password", "", "encryption password for keyfile")
 	flag.Parse()
 	files := flag.Args()
+	fmt.Println("files:", files)
 
 	setupBech32Prefix()
 	allSecret := make([]KeygenLocalState, len(files))

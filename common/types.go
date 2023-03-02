@@ -5,7 +5,8 @@ import (
 )
 
 type BridgeConfig struct {
-	Url string
+	BlockUrl string
+	StateUrl string
 }
 
 type TssConfig struct {

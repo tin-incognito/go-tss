@@ -1,23 +1,27 @@
 package network
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type Observer struct {
-	wg *sync.WaitGroup
+	wg     *sync.WaitGroup
+	chains map[int]*Chain
 }
 
-func NewObserver() (*Observer, error) {
+func NewObserver(chains map[int]*Chain) (*Observer, error) {
 	res := &Observer{
-		wg: &sync.WaitGroup{},
+		wg:     &sync.WaitGroup{},
+		chains: chains,
 	}
 	return res, nil
 }
 
 func (o *Observer) Start() error {
-	go o.processTxIns()
+	fmt.Println("Start observer")
+	for _, v := range o.chains {
+		v.Start()
+	}
 	return nil
-}
-
-func (o *Observer) processTxIns() {
-
 }

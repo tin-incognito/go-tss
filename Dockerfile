@@ -1,8 +1,11 @@
-FROM golang:1.17.0-alpine AS builder
+FROM golang:1.19.0-alpine AS builder
 
 RUN apk update && apk add --no-cache git
 WORKDIR /go/src/app
+
 COPY . .
+COPY ../ ../bridge
+
 RUN go mod download
 WORKDIR /go/src/app/cmd/tss
 RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o tss

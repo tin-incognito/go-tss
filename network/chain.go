@@ -5,8 +5,14 @@ import (
 )
 
 type Chain struct {
-	TxsQueue chan struct{}
-	stopCh   chan struct{}
+	ShieldTxsQueue   chan struct{} // TODO: define txs
+	UnshieldTxsQueue chan struct{} // TODO: define txs
+	stopCh           chan struct{}
+}
+
+func InitChains() map[int]*Chain {
+	res := make(map[int]*Chain) // 0 -> Incognitochain, 1 -> BTC, 2 -> ETH
+	return res
 }
 
 func (c *Chain) Start() error {
@@ -20,7 +26,9 @@ func (c *Chain) processTxIns() {
 		select {
 		case <-c.stopCh:
 			return
-		case Tx := <-c.TxsQueue:
+		case Tx := <-c.ShieldTxsQueue: // external network
+			fmt.Println(Tx)
+		case Tx := <-c.UnshieldTxsQueue: // Incognitochain
 			fmt.Println(Tx)
 		}
 	}
@@ -28,5 +36,10 @@ func (c *Chain) processTxIns() {
 
 func (c *Chain) scan() error {
 	//TODO: scan external network here then return value to TxsQueue channel
+
+	// receive external network tx
+	t := struct{}{}
+	c.ShieldTxsQueue <- t
+	c.UnshieldTxsQueue <- t
 	return nil
 }

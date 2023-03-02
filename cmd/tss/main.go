@@ -87,7 +87,8 @@ func main() {
 	if err := signer.Start(); err != nil {
 		log.Fatal(err)
 	}
-	observer, err := network.NewObserver()
+	chains := network.InitChains()
+	observer, err := network.NewObserver(chains)
 	if err != nil {
 		log.Fatal(err)
 	}

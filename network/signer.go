@@ -12,7 +12,9 @@ import (
 type Signer struct {
 	wg            *sync.WaitGroup
 	stopCh        chan struct{}
-	BridgeScanner *BridgeScanner
+	bridgeScanner *BridgeScanner
+	bridgeClient  *BridgeClient
+	ChainClients  map[int]*ChainClient
 	blockScanners map[int]*BlockScanner
 	tssKeygen     *Keygen
 
@@ -23,9 +25,10 @@ func NewSigner(tssSever *tss.TssServer, blockUrl, stateUrl string) (*Signer, err
 	res := &Signer{
 		wg:            &sync.WaitGroup{},
 		stopCh:        make(chan struct{}),
-		BridgeScanner: NewBridgeScanner(blockUrl, stateUrl),
+		bridgeScanner: NewBridgeScanner(blockUrl, stateUrl),
 		blockScanners: make(map[int]*BlockScanner),
 		tssKeygen:     NewTssKeygen(tssSever),
+		bridgeClient:  NewBridgeClient(),
 	}
 	return res, nil
 }
@@ -34,11 +37,11 @@ func (s *Signer) Start() error {
 	fmt.Println("Start signer")
 	go s.processTxnOut()
 
-	go s.processKeygen(s.BridgeScanner.KeygenCh)
+	go s.processKeygen(s.bridgeScanner.KeygenCh)
 
 	go s.signTransactions()
 
-	go s.BridgeScanner.Start()
+	go s.bridgeScanner.Start()
 
 	for _, v := range s.blockScanners {
 		go v.Start()
@@ -100,6 +103,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 }
 
 func (s *Signer) sendKeygenToBridgeNetwork(height int64, poolPk string, blame types.Blame, input []string, keygenType int32, keygenTime int64) error {
+
 	return nil
 }
 

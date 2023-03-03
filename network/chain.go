@@ -38,8 +38,8 @@ func (c *Chain) scan() error {
 	//TODO: scan external network here then return value to TxsQueue channel
 
 	// receive external network tx
-	t := struct{}{}
-	c.ShieldTxsQueue <- t
-	c.UnshieldTxsQueue <- t
+	//t := struct{}{}
+	//c.ShieldTxsQueue <- t
+	//c.UnshieldTxsQueue <- t
 	return nil
 }

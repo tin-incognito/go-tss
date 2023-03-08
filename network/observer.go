@@ -7,7 +7,7 @@ import (
 
 type Observer struct {
 	wg     *sync.WaitGroup
-	chains map[int]*Chain
+	chains map[int]*Chain // eth -> chain object, btc -> chain object
 }
 
 func NewObserver(chains map[int]*Chain) (*Observer, error) {

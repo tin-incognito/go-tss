@@ -4,9 +4,12 @@ import (
 	"fmt"
 )
 
+type ChainConfig struct{}
+
 type Chain struct {
-	ShieldTxsQueue   chan struct{} // TODO: define txs
-	UnshieldTxsQueue chan struct{} // TODO: define txs
+	ShieldTxsQueue   chan struct{} // TODO: @thach define txs (tx in external network)
+	UnshieldTxsQueue chan struct{} // TODO: @thach define txs (tx from Incognitochain)
+	cfg              ChainConfig
 	stopCh           chan struct{}
 }
 
@@ -35,11 +38,16 @@ func (c *Chain) processTxIns() {
 }
 
 func (c *Chain) scan() error {
-	//TODO: scan external network here then return value to TxsQueue channel
+	//TODO: @thach scan external network here then return value to TxsQueue channel
+
+	// call json rpc to external network full node (from external network)
+	// catch event deposit
+	//c.ShieldTxsQueue <- t
+
+	// sync latest state beacon (from Incognitochain)
+	//c.UnshieldTxsQueue <- t
 
 	// receive external network tx
 	//t := struct{}{}
-	//c.ShieldTxsQueue <- t
-	//c.UnshieldTxsQueue <- t
 	return nil
 }

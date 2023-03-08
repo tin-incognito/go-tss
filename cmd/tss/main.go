@@ -32,7 +32,7 @@ var (
 func main() {
 
 	// Parse the cli into configuration structs
-	tssConf, p2pConf, bConf := parseFlags()
+	tssConf, p2pConf, bConf, _ := parseFlags()
 	if help {
 		flag.PrintDefaults()
 		return
@@ -105,6 +105,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// observers -> observer eth -> listen eth network
+	// observers -> observer btc -> listen btc network
 	if err := observer.Start(); err != nil {
 		log.Fatal(err)
 	}
@@ -117,7 +119,7 @@ func main() {
 }
 
 // parseFlags - Parses the cli flags
-func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.BridgeConfig) {
+func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.BridgeConfig, chainConfs map[string]common.ChainConfig) {
 	// we setup the configure for the general configuration
 	flag.StringVar(&tssAddr, "tss-port", "127.0.0.1:8080", "tss port")
 	flag.BoolVar(&help, "h", false, "Display Help")

@@ -31,7 +31,7 @@ const (
 	bridgeNetworkCliFolderName = ".bridge"
 )
 
-// Keys manages all the keys used by thorchain
+// Keys manages all the keys used by bridge network
 type Keys struct {
 	signerName string
 	password   string // TODO this is a bad way , need to fix it
@@ -89,9 +89,9 @@ func (b *BridgeClient) sendKeygenTx(poolPk string, blame *types.Blame, input []s
 	}
 	txId, err := b.broadcast(keygenMsg)
 	if err != nil {
-		return fmt.Errorf("fail to send the tx to thorchain: %w", err)
+		return fmt.Errorf("fail to send the tx to bridge network: %w", err)
 	}
-	fmt.Println("thorchain hash", txId, "sign and send to thorchain successfully")
+	fmt.Println("bridge network tx hash", txId, "sign and send to bridge network successfully")
 	return nil
 }
 

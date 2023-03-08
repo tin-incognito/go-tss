@@ -28,7 +28,9 @@ func (kg *Keygen) GenerateNewKey(keygenBlockHeight int64, pKeys []string) (types
 		keys = append(keys, string(item))
 	}
 	keyGenReq := keygen.Request{
-		Keys: keys,
+		Keys:        keys,
+		Version:     "0",
+		BlockHeight: keygenBlockHeight,
 	}
 
 	// Use the churn try's block to choose the same leader for every node in an Asgard,

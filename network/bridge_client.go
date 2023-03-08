@@ -3,8 +3,12 @@ package network
 import (
 	"bridge/app"
 	"bridge/x/bridge/types"
+	"bytes"
 	"fmt"
-	"strings"
+	"io"
+	"os"
+	"os/user"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -23,6 +27,10 @@ import (
 	stypes "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	bridgeNetworkCliFolderName = ".bridge"
+)
+
 // Keys manages all the keys used by thorchain
 type Keys struct {
 	signerName string
@@ -30,18 +38,37 @@ type Keys struct {
 	kb         ckeys.Keyring
 }
 
-func NewBridgeClient() *BridgeClient {
-	return &BridgeClient{}
+func NewKeys(signerName, password string, kb ckeys.Keyring) *Keys {
+	return &Keys{
+		signerName: signerName,
+		password:   password,
+		kb:         kb,
+	}
+}
+
+func NewBridgeClient(blockUrl, stateUrl string, keys *Keys, cfg *BridgeClientConfig) *BridgeClient {
+	return &BridgeClient{
+		ChainClient:   *NewChainClient(&cfg.ChainClientConfig),
+		cfg:           *cfg,
+		broadcastLock: &sync.RWMutex{},
+		blockHeight:   0,
+		keys:          keys,
+	}
 }
 
 type BridgeClientConfig struct {
 	ChainClientConfig
 }
 
+func NewBridgeClientConfig(cfg *ChainClientConfig) *BridgeClientConfig {
+	return &BridgeClientConfig{
+		ChainClientConfig: *cfg,
+	}
+}
+
 type BridgeClient struct {
 	ChainClient
-	stateUrl      string
-	config        BridgeClientConfig
+	cfg           BridgeClientConfig
 	broadcastLock *sync.RWMutex
 	blockHeight   int64
 	accountNumber uint64
@@ -141,7 +168,7 @@ func (b *BridgeClient) getAccountNumberAndSequenceNumber() (uint64, uint64, erro
 	if err != nil {
 		return 0, 0, err
 	}
-	accountInfo, err := http.GetAccountInfo(b.stateUrl, accountAddress.String())
+	accountInfo, err := http.GetAccountInfo(b.cfg.BlockUrl, accountAddress.String())
 	if err != nil {
 		return 0, 0, err
 	}
@@ -168,9 +195,9 @@ func (b *BridgeClient) AccountAddress() (sdk.AccAddress, error) {
 func (b *BridgeClient) GetContext() client.Context {
 	ctx := client.Context{}
 	ctx = ctx.WithKeyring(b.keys.kb)
-	ctx = ctx.WithChainID(b.config.ChainId)
-	ctx = ctx.WithHomeDir(b.config.ChainHomeFolder)
-	ctx = ctx.WithFromName(b.config.SignerName)
+	ctx = ctx.WithChainID(b.cfg.ChainId)
+	ctx = ctx.WithHomeDir("")
+	ctx = ctx.WithFromName(b.cfg.SignerName)
 	accountAddress, _ := b.AccountAddress()
 	ctx = ctx.WithFromAddress(accountAddress)
 	ctx = ctx.WithBroadcastMode("sync")
@@ -182,10 +209,8 @@ func (b *BridgeClient) GetContext() client.Context {
 	ctx = ctx.WithLegacyAmino(encodingConfig.Amino)
 	ctx = ctx.WithAccountRetriever(authtypes.AccountRetriever{})
 
-	remote := b.config.ChainRPC
-	if !strings.HasSuffix(b.config.ChainHost, "http") {
-		remote = fmt.Sprintf("tcp://%s", remote)
-	}
+	remote := b.cfg.Stateurl
+
 	ctx = ctx.WithNodeURI(remote)
 	client, err := rpchttp.New(remote, "/websocket")
 	if err != nil {
@@ -193,4 +218,45 @@ func (b *BridgeClient) GetContext() client.Context {
 	}
 	ctx = ctx.WithClient(client)
 	return ctx
+}
+
+// GetKeyringKeybase return keyring and key info
+func GetKeyringKeybase(chainHomeFolder, signerName, password string) (ckeys.Keyring, error) {
+	if len(signerName) == 0 {
+		return nil, fmt.Errorf("signer name is empty")
+	}
+	if len(password) == 0 {
+		return nil, fmt.Errorf("password is empty")
+	}
+
+	buf := bytes.NewBufferString(password)
+	// the library used by keyring is using ReadLine , which expect a new line
+	buf.WriteByte('\n')
+	kb, err := getKeybase(chainHomeFolder, buf)
+	if err != nil {
+		return nil, fmt.Errorf("fail to get keybase,err:%w", err)
+	}
+	// the keyring library which used by cosmos sdk , will use interactive terminal if it detect it has one
+	// this will temporary trick it think there is no interactive terminal, thus will read the password from the buffer provided
+	oldStdIn := os.Stdin
+	defer func() {
+		os.Stdin = oldStdIn
+	}()
+	os.Stdin = nil
+	return kb, nil
+}
+
+// getKeybase will create an instance of Keybase
+func getKeybase(thorchainHome string, reader io.Reader) (ckeys.Keyring, error) {
+	cliDir := thorchainHome
+	if len(thorchainHome) == 0 {
+		usr, err := user.Current()
+		if err != nil {
+			return nil, fmt.Errorf("fail to get current user,err:%w", err)
+		}
+		cliDir = filepath.Join(usr.HomeDir, bridgeNetworkCliFolderName)
+	}
+
+	encodingConfig := app.MakeEncodingConfig()
+	return ckeys.New(sdk.KeyringServiceName(), ckeys.BackendFile, cliDir, reader, encodingConfig.Marshaler)
 }

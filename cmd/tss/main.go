@@ -80,7 +80,20 @@ func main() {
 		}
 	}()
 
-	signer, err := network.NewSigner(tss, bConf.BlockUrl, bConf.StateUrl)
+	kb, err := network.GetKeyringKeybase("", bConf.SignerName, bConf.SignerPasswd)
+	if err != nil {
+		panic(err)
+	}
+
+	signer, err := network.NewSigner(
+		tss,
+		bConf.BlockUrl, bConf.StateUrl,
+		network.NewKeys(bConf.SignerName, bConf.SignerPasswd, kb),
+		network.NewBridgeClientConfig(network.NewChainClientConfig(
+			network.BridgeChainId,
+			bConf.BlockUrl, bConf.StateUrl, bConf.SignerName, bConf.SignerPasswd,
+		)),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,6 +139,8 @@ func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.Br
 	flag.Var(&p2pConf.BootstrapPeers, "peer", "Adds a peer multiaddress to the bootstrap list")
 	flag.StringVar(&bConf.BlockUrl, "bridge-block-url", "http://localhost:26657", "url for bridge chain")
 	flag.StringVar(&bConf.StateUrl, "bridge-state-url", "http://localhost:1317", "url for bridge chain")
+	flag.StringVar(&bConf.SignerName, "signer_name", os.Getenv("SIGNER_NAME"), "signer name (validator name)")
+	flag.StringVar(&bConf.SignerPasswd, "signer_password", os.Getenv("SIGNER_PASSWD"), "signer password")
 	flag.Parse()
 	return
 }

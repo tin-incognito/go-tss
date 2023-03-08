@@ -48,9 +48,13 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 				time.Sleep(BridgeNetworkBlockTime)
 				continue
 			}
-			keygenBlock, err := http.GetKeygenBlock(b.stateUrl, chainCurrentHeight)
+			fmt.Println("Get keygenBlock", b.stateUrl, nextBlock)
+			keygenBlock, err := http.GetKeygenBlock(b.stateUrl, nextBlock)
 			if err == nil {
+				fmt.Println("Detect keygen block")
 				b.KeygenCh <- keygenBlock
+			} else {
+				fmt.Println("err:", err)
 			}
 			b.currentBlock = nextBlock
 		}

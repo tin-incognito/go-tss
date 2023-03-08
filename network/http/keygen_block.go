@@ -53,6 +53,8 @@ func GetCurrentHeight(url string) (int64, error) {
 type GetKeygenBlockResp struct {
 	Code        int `json:"code"`
 	KeygenBlock struct {
+		Index   string `json:"index"`
+		Height  string `json:"height"`
 		Keygens []struct {
 			Id      string   `json:"id"`
 			Type    int      `json:"type"`
@@ -89,7 +91,7 @@ func GetKeygenBlock(url string, height int64) (*types.KeygenBlock, error) {
 	if resp.Code != 0 {
 		return nil, fmt.Errorf("not found keygen block")
 	}
-	blockHeight, err := strconv.ParseInt(resp.KeygenBlock.Keygens[0].Id, 10, 64)
+	blockHeight, err := strconv.ParseInt(resp.KeygenBlock.Height, 10, 64)
 	if err != nil {
 		return nil, err
 	}

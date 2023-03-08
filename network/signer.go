@@ -21,14 +21,14 @@ type Signer struct {
 	//logger        zerolog.Logger
 }
 
-func NewSigner(tssSever *tss.TssServer, blockUrl, stateUrl string) (*Signer, error) {
+func NewSigner(tssSever *tss.TssServer, blockUrl, stateUrl string, keys *Keys, cfg *BridgeClientConfig) (*Signer, error) {
 	res := &Signer{
 		wg:            &sync.WaitGroup{},
 		stopCh:        make(chan struct{}),
 		bridgeScanner: NewBridgeScanner(blockUrl, stateUrl),
 		blockScanners: make(map[int]*BlockScanner),
 		tssKeygen:     NewTssKeygen(tssSever),
-		bridgeClient:  NewBridgeClient(),
+		bridgeClient:  NewBridgeClient(blockUrl, stateUrl, keys, cfg),
 	}
 	return res, nil
 }
@@ -60,6 +60,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 		case <-s.stopCh:
 			return
 		case keygenBlock := <-ch:
+			fmt.Println("Start processing keygen block")
 			/*if !more {*/
 			/*return*/
 			/*}*/
@@ -103,8 +104,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 }
 
 func (s *Signer) sendKeygenToBridgeNetwork(height int64, poolPk string, blame types.Blame, input []string, keygenType int32, keygenTime int64) error {
-
-	return nil
+	return s.bridgeClient.sendKeygenTx(poolPk, &blame, input, keygenType, []string{BridgeChainId}, height, keygenTime)
 }
 
 func (s *Signer) signTransactions() {

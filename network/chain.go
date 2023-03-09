@@ -22,11 +22,11 @@ type MetaData struct {
 }
 
 type ShieldTxData struct {
-	RequestTx string
-	Amount    int64
-	ToAddr    string
-	Memo      string
-	MetaData  []byte
+	RequestTx        string
+	Amount           int64
+	ToAddr           string
+	IncognitoAddress string
+	MetaData         []byte
 }
 
 type UnshieldTxData struct {
@@ -141,11 +141,11 @@ func processBtcDeposits(btcClient *rpcclient.Client, c *Chain, chainParams *chai
 				// todo: validate incognito payment address in memo
 
 				c.ShieldTxsQueue <- ShieldTxData{
-					RequestTx: tx.TxHash().String(),
-					Amount:    out.Value,
-					ToAddr:    addrStr,
-					Memo:      memo,
-					MetaData:  metaData,
+					RequestTx:        tx.TxHash().String(),
+					Amount:           out.Value,
+					ToAddr:           addrStr,
+					IncognitoAddress: memo,
+					MetaData:         metaData,
 				}
 			}
 		}

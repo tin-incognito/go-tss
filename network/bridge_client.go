@@ -58,11 +58,13 @@ func NewBridgeClient(blockUrl, stateUrl string, keys *Keys, cfg *BridgeClientCon
 
 type BridgeClientConfig struct {
 	ChainClientConfig
+	RelayerAddress string
 }
 
-func NewBridgeClientConfig(cfg *ChainClientConfig) *BridgeClientConfig {
+func NewBridgeClientConfig(cfg *ChainClientConfig, relayerAddress string) *BridgeClientConfig {
 	return &BridgeClientConfig{
 		ChainClientConfig: *cfg,
+		RelayerAddress:    relayerAddress,
 	}
 }
 
@@ -80,9 +82,8 @@ type BridgeClient struct {
 	currentBlockHeight   int64
 }
 
-func (b *BridgeClient) sendKeygenTx(poolPk string, blame *types.Blame, input []string, keygenType int32, chains []string, height, keygenTime int64) error {
+func (b *BridgeClient) sendKeygenTx(creator, poolPk string, blame *types.Blame, input []string, keygenType int32, chains []string, height, keygenTime int64) error {
 
-	var creator string
 	keygenMsg, err := b.getKeygenStdTx(creator, poolPk, blame, input, keygenType, chains, height, keygenTime)
 	if err != nil {
 		return fmt.Errorf("fail to get keygen id: %w", err)
@@ -128,6 +129,9 @@ func (b *BridgeClient) broadcast(msgs ...stypes.Msg) (string, error) {
 	if err != nil {
 		return txId, err
 	}
+
+	builder.SetMsgs(msgs...)
+
 	builder.SetGasLimit(4000000000)
 	err = clienttx.Sign(factory, ctx.GetFromName(), builder, true)
 	if err != nil {
@@ -168,7 +172,7 @@ func (b *BridgeClient) getAccountNumberAndSequenceNumber() (uint64, uint64, erro
 	if err != nil {
 		return 0, 0, err
 	}
-	accountInfo, err := http.GetAccountInfo(b.cfg.BlockUrl, accountAddress.String())
+	accountInfo, err := http.GetAccountInfo(b.cfg.Stateurl, accountAddress.String())
 	if err != nil {
 		return 0, 0, err
 	}
@@ -247,9 +251,9 @@ func GetKeyringKeybase(chainHomeFolder, signerName, password string) (ckeys.Keyr
 }
 
 // getKeybase will create an instance of Keybase
-func getKeybase(thorchainHome string, reader io.Reader) (ckeys.Keyring, error) {
-	cliDir := thorchainHome
-	if len(thorchainHome) == 0 {
+func getKeybase(home string, reader io.Reader) (ckeys.Keyring, error) {
+	cliDir := home
+	if len(home) == 0 {
 		usr, err := user.Current()
 		if err != nil {
 			return nil, fmt.Errorf("fail to get current user,err:%w", err)
@@ -258,5 +262,5 @@ func getKeybase(thorchainHome string, reader io.Reader) (ckeys.Keyring, error) {
 	}
 
 	encodingConfig := app.MakeEncodingConfig()
-	return ckeys.New(sdk.KeyringServiceName(), ckeys.BackendFile, cliDir, reader, encodingConfig.Marshaler)
+	return ckeys.New(sdk.KeyringServiceName(), ckeys.BackendOS, cliDir, reader, encodingConfig.Marshaler)
 }

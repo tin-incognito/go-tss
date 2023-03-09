@@ -92,7 +92,7 @@ func main() {
 		network.NewBridgeClientConfig(network.NewChainClientConfig(
 			network.BridgeChainId,
 			bConf.BlockUrl, bConf.StateUrl, bConf.SignerName, bConf.SignerPasswd,
-		)),
+		), bConf.RelayerAddress),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -143,6 +143,7 @@ func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.Br
 	flag.StringVar(&bConf.StateUrl, "bridge-state-url", "http://localhost:1317", "url for bridge chain")
 	flag.StringVar(&bConf.SignerName, "signer_name", os.Getenv("SIGNER_NAME"), "signer name (validator name)")
 	flag.StringVar(&bConf.SignerPasswd, "signer_password", os.Getenv("SIGNER_PASSWD"), "signer password")
+	flag.StringVar(&bConf.RelayerAddress, "relayer_address", "bridge1t00hhfcwn8ja9cv64yzal9mdcjepyc53w9y0ms", "relayer address")
 	flag.Parse()
 	return
 }

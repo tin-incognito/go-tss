@@ -5,10 +5,11 @@ import (
 )
 
 type BridgeConfig struct {
-	BlockUrl     string
-	StateUrl     string
-	SignerName   string
-	SignerPasswd string
+	BlockUrl       string
+	StateUrl       string
+	SignerName     string
+	SignerPasswd   string
+	RelayerAddress string // TODO: This is the best way
 }
 
 type ChainConfig struct {

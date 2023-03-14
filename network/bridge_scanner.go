@@ -30,33 +30,42 @@ func (b *BridgeScanner) Start() error {
 
 func (b *BridgeScanner) scanKeygenBlock() error {
 	fmt.Println("start scan keygen block")
-	lastMimirCheck := time.Now().Add(-BridgeNetworkBlockTime)
+	lastCheck := time.Now().Add(-BridgeNetworkBlockTime)
 	for {
 		select {
 		case <-b.stopCh:
 
 		default:
-			nextBlock := b.BlockScanner.currentBlock + 1
-			if time.Since(lastMimirCheck) >= BridgeNetworkBlockTime {
-				lastMimirCheck = time.Now()
+			nextBlock := b.currentBlock + 1
+			if time.Since(lastCheck) >= BridgeNetworkBlockTime {
+				lastCheck = time.Now()
+				continue
 			}
 			chainCurrentHeight, err := b.BlockScanner.GetCurrentHeight()
 			if err != nil {
-				return err
+				time.Sleep(BridgeNetworkBlockTime)
+				continue
 			}
 			if chainCurrentHeight < nextBlock {
 				time.Sleep(BridgeNetworkBlockTime)
 				continue
 			}
-			fmt.Println("Get keygenBlock", b.stateUrl, nextBlock)
 			keygenBlock, err := http.GetKeygenBlock(b.stateUrl, nextBlock)
 			if err == nil {
-				fmt.Println("Detect keygen block")
+				fmt.Println("Get keygenBlock", b.stateUrl, nextBlock, "Detect keygen block")
 				b.KeygenCh <- keygenBlock
 			} else {
-				fmt.Println("err:", err)
+				if err == http.ErrConnectionRefused {
+					time.Sleep(BridgeNetworkBlockTime)
+					continue
+				} else {
+					if err != http.ErrNotFoundKeyGenBlock {
+						fmt.Println("err:", err)
+					}
+				}
 			}
 			b.currentBlock = nextBlock
+			time.Sleep(BridgeNetworkBlockTime)
 		}
 	}
 }

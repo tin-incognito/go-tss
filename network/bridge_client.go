@@ -13,7 +13,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+
+	"github.com/cosmos/cosmos-sdk/crypto"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	tmcrypto "github.com/tendermint/tendermint/crypto"
+	tmsecp256k1 "github.com/tendermint/tendermint/crypto/secp256k1"
 	"gitlab.com/thorchain/tss/go-tss/network/http"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -58,11 +64,13 @@ func NewBridgeClient(blockUrl, stateUrl string, keys *Keys, cfg *BridgeClientCon
 
 type BridgeClientConfig struct {
 	ChainClientConfig
+	RelayerAddress string
 }
 
-func NewBridgeClientConfig(cfg *ChainClientConfig) *BridgeClientConfig {
+func NewBridgeClientConfig(cfg *ChainClientConfig, relayerAddress string) *BridgeClientConfig {
 	return &BridgeClientConfig{
 		ChainClientConfig: *cfg,
+		RelayerAddress:    relayerAddress,
 	}
 }
 
@@ -80,9 +88,8 @@ type BridgeClient struct {
 	currentBlockHeight   int64
 }
 
-func (b *BridgeClient) sendKeygenTx(poolPk string, blame *types.Blame, input []string, keygenType int32, chains []string, height, keygenTime int64) error {
+func (b *BridgeClient) sendKeygenTx(creator, poolPk string, blame *types.Blame, input []string, keygenType int32, chains []string, height, keygenTime int64) error {
 
-	var creator string
 	keygenMsg, err := b.getKeygenStdTx(creator, poolPk, blame, input, keygenType, chains, height, keygenTime)
 	if err != nil {
 		return fmt.Errorf("fail to get keygen id: %w", err)
@@ -128,8 +135,13 @@ func (b *BridgeClient) broadcast(msgs ...stypes.Msg) (string, error) {
 	if err != nil {
 		return txId, err
 	}
-	builder.SetGasLimit(4000000000)
+
+	builder.SetMsgs(msgs...)
+
+	//builder.SetGasLimit(4000000000)
+	builder.SetGasLimit(200000)
 	err = clienttx.Sign(factory, ctx.GetFromName(), builder, true)
+	fmt.Println("err:", err)
 	if err != nil {
 		return txId, err
 	}
@@ -138,6 +150,11 @@ func (b *BridgeClient) broadcast(msgs ...stypes.Msg) (string, error) {
 	if err != nil {
 		return txId, err
 	}
+	temp, err := ctx.TxConfig.TxJSONEncoder()(builder.GetTx())
+	if err != nil {
+		return txId, err
+	}
+	fmt.Println("temp:", string(temp))
 
 	// broadcast to a Tendermint node
 	commit, err := ctx.BroadcastTx(txBytes)
@@ -168,7 +185,7 @@ func (b *BridgeClient) getAccountNumberAndSequenceNumber() (uint64, uint64, erro
 	if err != nil {
 		return 0, 0, err
 	}
-	accountInfo, err := http.GetAccountInfo(b.cfg.BlockUrl, accountAddress.String())
+	accountInfo, err := http.GetAccountInfo(b.cfg.Stateurl, accountAddress.String())
 	if err != nil {
 		return 0, 0, err
 	}
@@ -209,10 +226,8 @@ func (b *BridgeClient) GetContext() client.Context {
 	ctx = ctx.WithLegacyAmino(encodingConfig.Amino)
 	ctx = ctx.WithAccountRetriever(authtypes.AccountRetriever{})
 
-	remote := b.cfg.Stateurl
-
-	ctx = ctx.WithNodeURI(remote)
-	client, err := rpchttp.New(remote, "/websocket")
+	ctx = ctx.WithNodeURI(b.cfg.RpcUrl)
+	client, err := rpchttp.New(b.cfg.RpcUrl, "/websocket")
 	if err != nil {
 		panic(err)
 	}
@@ -247,9 +262,9 @@ func GetKeyringKeybase(chainHomeFolder, signerName, password string) (ckeys.Keyr
 }
 
 // getKeybase will create an instance of Keybase
-func getKeybase(thorchainHome string, reader io.Reader) (ckeys.Keyring, error) {
-	cliDir := thorchainHome
-	if len(thorchainHome) == 0 {
+func getKeybase(home string, reader io.Reader) (ckeys.Keyring, error) {
+	cliDir := home
+	if len(home) == 0 {
 		usr, err := user.Current()
 		if err != nil {
 			return nil, fmt.Errorf("fail to get current user,err:%w", err)
@@ -258,5 +273,29 @@ func getKeybase(thorchainHome string, reader io.Reader) (ckeys.Keyring, error) {
 	}
 
 	encodingConfig := app.MakeEncodingConfig()
-	return ckeys.New(sdk.KeyringServiceName(), ckeys.BackendFile, cliDir, reader, encodingConfig.Marshaler)
+	return ckeys.New(sdk.KeyringServiceName(), ckeys.BackendOS, cliDir, reader, encodingConfig.Marshaler)
+}
+
+// GetPrivateKey return the private key
+func (k *Keys) GetPrivateKey() (cryptotypes.PrivKey, error) {
+	// return k.kb.ExportPrivateKeyObject(k.signerName)
+	privKeyArmor, err := k.kb.ExportPrivKeyArmor(k.signerName, k.password)
+	if err != nil {
+		return nil, err
+	}
+	priKey, _, err := crypto.UnarmorDecryptPrivKey(privKeyArmor, k.password)
+	if err != nil {
+		return nil, fmt.Errorf("fail to unarmor private key: %w", err)
+	}
+	return priKey, nil
+}
+
+// CosmosPrivateKeyToTMPrivateKey convert cosmos implementation of private key to tendermint private key
+func CosmosPrivateKeyToTMPrivateKey(privateKey cryptotypes.PrivKey) tmcrypto.PrivKey {
+	switch k := privateKey.(type) {
+	case *secp256k1.PrivKey:
+		return tmsecp256k1.PrivKey(k.Bytes())
+	default:
+		return nil
+	}
 }

@@ -63,6 +63,9 @@ type GetKeygenBlockResp struct {
 	} `json:"keygenBlock"`
 }
 
+var ErrNotFoundKeyGenBlock = fmt.Errorf("error not found keygen block")
+var ErrConnectionRefused = fmt.Errorf("error connection refused")
+
 func GetKeygenBlock(url string, height int64) (*types.KeygenBlock, error) {
 	url = url + "/bridge/bridge/keygen_block/%v"
 	url = fmt.Sprintf(url, height)
@@ -89,7 +92,13 @@ func GetKeygenBlock(url string, height int64) (*types.KeygenBlock, error) {
 		return nil, err
 	}
 	if resp.Code != 0 {
-		return nil, fmt.Errorf("not found keygen block")
+		if resp.Code == 5 {
+			return nil, ErrNotFoundKeyGenBlock
+		} else if resp.Code == 14 {
+			return nil, ErrConnectionRefused
+		} else {
+			return nil, fmt.Errorf("not found keygen block")
+		}
 	}
 	blockHeight, err := strconv.ParseInt(resp.KeygenBlock.Height, 10, 64)
 	if err != nil {

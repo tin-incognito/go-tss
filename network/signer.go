@@ -61,6 +61,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 			return
 		case keygenBlock := <-ch:
 			fmt.Println("Start processing keygen block")
+
 			/*if !more {*/
 			/*return*/
 			/*}*/
@@ -73,17 +74,15 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 				/*}*/
 				keygenStart := time.Now()
 				pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Height, keygenReq.GetMembers())
-				if blame.FailReason == "" {
+				if blame.FailReason != "" {
 					err := fmt.Errorf("reason: %s, nodes %+v", blame.FailReason, blame.BlameNodes)
 					/*s.logger.Error().Err(err).Msg("Blame")*/
-					fmt.Println(0)
 					panic(err)
 				}
 				keygenTime := time.Since(keygenStart).Milliseconds()
 				if err != nil {
 					/*s.errCounter.WithLabelValues("fail_to_keygen_pubkey", "").Inc()*/
 					/*s.logger.Error().Err(err).Msg("fail to generate new pubkey")*/
-					fmt.Println(1)
 					panic(err)
 				}
 				/*if pubKey.Secp256K1 != "" {*/
@@ -94,10 +93,20 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 				/*s.pubkeyMgr.AddPubKey(pubKey.Secp256k1, true)*/
 				/*}*/
 
+				//TODO: this is the bad way try to improve here
+				selfAddress, err := s.bridgeClient.AccountAddress()
+				if err != nil {
+					panic(err)
+				}
+
+				if selfAddress.String() != s.bridgeClient.cfg.RelayerAddress {
+					continue
+				}
+				//
+
 				if err := s.sendKeygenToBridgeNetwork(keygenBlock.Height, pubKey.Secp256K1, blame, keygenReq.GetMembers(), keygenReq.Type, keygenTime); err != nil {
 					/*s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()*/
 					/*s.logger.Error().Err(err).Msg("fail to broadcast keygen")*/
-					fmt.Println(2)
 					panic(err)
 				}
 
@@ -107,7 +116,11 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 }
 
 func (s *Signer) sendKeygenToBridgeNetwork(height int64, poolPk string, blame types.Blame, input []string, keygenType int32, keygenTime int64) error {
-	return s.bridgeClient.sendKeygenTx(poolPk, &blame, input, keygenType, []string{BridgeChainId}, height, keygenTime)
+	selfAddress, err := s.bridgeClient.AccountAddress()
+	if err != nil {
+		return err
+	}
+	return s.bridgeClient.sendKeygenTx(selfAddress.String(), poolPk, &blame, input, keygenType, []string{BridgeChainId}, height, keygenTime)
 }
 
 func (s *Signer) signTransactions() {

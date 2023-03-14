@@ -7,8 +7,11 @@ import (
 type BridgeConfig struct {
 	BlockUrl     string
 	StateUrl     string
+	RpcUrl       string
 	SignerName   string
-	SignerPasswd string
+	SignerPasswd string // TODO: This is the bad way, try to improve later
+	//SignerPrivateKey string // TODO: This is the bad way, try to improve later
+	RelayerAddress string // TODO: This is the bad way, try to improve later
 }
 
 type ChainConfig struct {

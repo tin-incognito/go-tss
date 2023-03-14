@@ -16,15 +16,17 @@ type ChainClientConfig struct {
 	ChainId      string `mapstructure:"chain_id" `
 	BlockUrl     string `mapstructure:"block_url" `
 	Stateurl     string `mapstructure:"state_url" `
+	RpcUrl       string `mapstructure:"rpc_url" `
 	SignerName   string `mapstructure:"signer_name"`
 	SignerPasswd string
 }
 
-func NewChainClientConfig(chainId, blockUrl, stateUrl, signerName, signerPasswd string) *ChainClientConfig {
+func NewChainClientConfig(chainId, blockUrl, stateUrl, rpcUrl, signerName, signerPasswd string) *ChainClientConfig {
 	return &ChainClientConfig{
 		ChainId:      chainId,
 		BlockUrl:     blockUrl,
 		Stateurl:     stateUrl,
+		RpcUrl:       rpcUrl,
 		SignerName:   signerName,
 		SignerPasswd: signerPasswd,
 	}

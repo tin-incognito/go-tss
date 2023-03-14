@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -10,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client/input"
 	golog "github.com/ipfs/go-log"
 	"gitlab.com/thorchain/binance-sdk/common/types"
 
@@ -48,22 +46,38 @@ func main() {
 	if os.Getenv("NET") == "testnet" || os.Getenv("NET") == "mocknet" {
 		types.Network = types.TestNetwork
 	}
-	// Read stdin for the private key
-	inBuf := bufio.NewReader(os.Stdin)
-	priKeyBytes, err := input.GetPassword("input node secret key:", inBuf)
+
+	kb, err := network.GetKeyringKeybase("", bConf.SignerName, bConf.SignerPasswd)
 	if err != nil {
-		fmt.Printf("error in get the secret key: %s\n", err.Error())
-		return
+		panic(err)
 	}
-	priKey, err := conversion.GetPriKey(priKeyBytes)
+
+	keys := network.NewKeys(bConf.SignerName, bConf.SignerPasswd, kb)
+
+	// setup TSS signing
+	priKey, err := keys.GetPrivateKey()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
+	tmPriKey := network.CosmosPrivateKeyToTMPrivateKey(priKey)
+
+	/*myValidator, err := kb.Key("validator3")*/
+	/*if err != nil {*/
+	/*panic(err)*/
+	/*}*/
+	/*pubKey, err := myValidator.GetPubKey()*/
+	/*if err != nil {*/
+	/*panic(err)*/
+	/*}*/
+	/*bech32PubKey, _ := legacybech32.MarshalPubKey(legacybech32.AccPK, pubKey)*/
+	/*pk, _ := NewPubKey(bech32PubKey)*/
+	/*fmt.Println("pk:", pk)*/
+
 	// init tss module
 	tss, err := tss.NewTss(
 		p2p.AddrList(p2pConf.BootstrapPeers),
 		p2pConf.Port,
-		priKey,
+		tmPriKey,
 		p2pConf.RendezvousString,
 		baseFolder,
 		tssConf,
@@ -80,19 +94,15 @@ func main() {
 		}
 	}()
 
-	kb, err := network.GetKeyringKeybase("", bConf.SignerName, bConf.SignerPasswd)
-	if err != nil {
-		panic(err)
-	}
-
 	signer, err := network.NewSigner(
 		tss,
 		bConf.BlockUrl, bConf.StateUrl,
-		network.NewKeys(bConf.SignerName, bConf.SignerPasswd, kb),
+		keys,
 		network.NewBridgeClientConfig(network.NewChainClientConfig(
 			network.BridgeChainId,
-			bConf.BlockUrl, bConf.StateUrl, bConf.SignerName, bConf.SignerPasswd,
-		)),
+			bConf.BlockUrl, bConf.StateUrl, bConf.RpcUrl,
+			bConf.SignerName, bConf.SignerPasswd,
+		), bConf.RelayerAddress),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -139,10 +149,28 @@ func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.Br
 	flag.IntVar(&p2pConf.Port, "p2p-port", 6668, "listening port local")
 	flag.StringVar(&p2pConf.ExternalIP, "external-ip", "", "external IP of this node")
 	flag.Var(&p2pConf.BootstrapPeers, "peer", "Adds a peer multiaddress to the bootstrap list")
-	flag.StringVar(&bConf.BlockUrl, "bridge-block-url", "http://localhost:26657", "url for bridge chain")
-	flag.StringVar(&bConf.StateUrl, "bridge-state-url", "http://localhost:1317", "url for bridge chain")
-	flag.StringVar(&bConf.SignerName, "signer_name", os.Getenv("SIGNER_NAME"), "signer name (validator name)")
-	flag.StringVar(&bConf.SignerPasswd, "signer_password", os.Getenv("SIGNER_PASSWD"), "signer password")
+	flag.StringVar(&bConf.BlockUrl, "bridge_block_url", "http://localhost:26657", "url for bridge chain")
+	flag.StringVar(&bConf.StateUrl, "bridge_state_url", "http://localhost:1317", "url for bridge chain")
+	flag.StringVar(&bConf.SignerName, "bridge_signer_name", os.Getenv("SIGNER_NAME"), "signer name (validator name)")
+	flag.StringVar(&bConf.SignerPasswd, "bridge_signer_password", os.Getenv("SIGNER_PASSWD"), "signer password")
+	flag.StringVar(&bConf.RelayerAddress, "bridge_relayer_address", "bridge1t00hhfcwn8ja9cv64yzal9mdcjepyc53w9y0ms", "relayer address")
+	flag.StringVar(&bConf.RpcUrl, "bridge_rpc_url", "tcp://127.0.0.1:26657", "url for bridge chain")
+	//flag.StringVar(&bConf.SignerPrivateKey, "bridge_signer_private_key", "", "unarmor signer private key")
 	flag.Parse()
 	return
 }
+
+/*type PubKey string*/
+
+/*// NewPubKey create a new instance of PubKey*/
+/*// key is bech32 encoded string*/
+/*func NewPubKey(key string) (PubKey, error) {*/
+/*if len(key) == 0 {*/
+/*return "", nil*/
+/*}*/
+/*_, err := legacybech32.UnmarshalPubKey(legacybech32.AccPK, key)*/
+/*if err != nil {*/
+/*return "", fmt.Errorf("%s is not bech32 encoded pub key,err : %w", key, err)*/
+/*}*/
+/*return PubKey(key), nil*/
+/*}*/

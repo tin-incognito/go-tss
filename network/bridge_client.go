@@ -13,7 +13,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+
+	"github.com/cosmos/cosmos-sdk/crypto"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	tmcrypto "github.com/tendermint/tendermint/crypto"
+	tmsecp256k1 "github.com/tendermint/tendermint/crypto/secp256k1"
 	"gitlab.com/thorchain/tss/go-tss/network/http"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -132,8 +138,10 @@ func (b *BridgeClient) broadcast(msgs ...stypes.Msg) (string, error) {
 
 	builder.SetMsgs(msgs...)
 
-	builder.SetGasLimit(4000000000)
+	//builder.SetGasLimit(4000000000)
+	builder.SetGasLimit(200000)
 	err = clienttx.Sign(factory, ctx.GetFromName(), builder, true)
+	fmt.Println("err:", err)
 	if err != nil {
 		return txId, err
 	}
@@ -142,6 +150,11 @@ func (b *BridgeClient) broadcast(msgs ...stypes.Msg) (string, error) {
 	if err != nil {
 		return txId, err
 	}
+	temp, err := ctx.TxConfig.TxJSONEncoder()(builder.GetTx())
+	if err != nil {
+		return txId, err
+	}
+	fmt.Println("temp:", string(temp))
 
 	// broadcast to a Tendermint node
 	commit, err := ctx.BroadcastTx(txBytes)
@@ -213,10 +226,8 @@ func (b *BridgeClient) GetContext() client.Context {
 	ctx = ctx.WithLegacyAmino(encodingConfig.Amino)
 	ctx = ctx.WithAccountRetriever(authtypes.AccountRetriever{})
 
-	remote := b.cfg.Stateurl
-
-	ctx = ctx.WithNodeURI(remote)
-	client, err := rpchttp.New(remote, "/websocket")
+	ctx = ctx.WithNodeURI(b.cfg.RpcUrl)
+	client, err := rpchttp.New(b.cfg.RpcUrl, "/websocket")
 	if err != nil {
 		panic(err)
 	}
@@ -263,4 +274,28 @@ func getKeybase(home string, reader io.Reader) (ckeys.Keyring, error) {
 
 	encodingConfig := app.MakeEncodingConfig()
 	return ckeys.New(sdk.KeyringServiceName(), ckeys.BackendOS, cliDir, reader, encodingConfig.Marshaler)
+}
+
+// GetPrivateKey return the private key
+func (k *Keys) GetPrivateKey() (cryptotypes.PrivKey, error) {
+	// return k.kb.ExportPrivateKeyObject(k.signerName)
+	privKeyArmor, err := k.kb.ExportPrivKeyArmor(k.signerName, k.password)
+	if err != nil {
+		return nil, err
+	}
+	priKey, _, err := crypto.UnarmorDecryptPrivKey(privKeyArmor, k.password)
+	if err != nil {
+		return nil, fmt.Errorf("fail to unarmor private key: %w", err)
+	}
+	return priKey, nil
+}
+
+// CosmosPrivateKeyToTMPrivateKey convert cosmos implementation of private key to tendermint private key
+func CosmosPrivateKeyToTMPrivateKey(privateKey cryptotypes.PrivKey) tmcrypto.PrivKey {
+	switch k := privateKey.(type) {
+	case *secp256k1.PrivKey:
+		return tmsecp256k1.PrivKey(k.Bytes())
+	default:
+		return nil
+	}
 }

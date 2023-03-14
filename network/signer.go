@@ -62,17 +62,6 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 		case keygenBlock := <-ch:
 			fmt.Println("Start processing keygen block")
 
-			//TODO: this is the bad way improve here
-			selfAddress, err := s.bridgeClient.AccountAddress()
-			if err != nil {
-				panic(err)
-			}
-
-			if selfAddress.String() != s.bridgeClient.cfg.RelayerAddress {
-				continue
-			}
-			//
-
 			/*if !more {*/
 			/*return*/
 			/*}*/
@@ -85,7 +74,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 				/*}*/
 				keygenStart := time.Now()
 				pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Height, keygenReq.GetMembers())
-				if blame.FailReason == "" {
+				if blame.FailReason != "" {
 					err := fmt.Errorf("reason: %s, nodes %+v", blame.FailReason, blame.BlameNodes)
 					/*s.logger.Error().Err(err).Msg("Blame")*/
 					panic(err)
@@ -103,6 +92,17 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 				/*if !pubKey.Secp256k1.IsEmpty() {*/
 				/*s.pubkeyMgr.AddPubKey(pubKey.Secp256k1, true)*/
 				/*}*/
+
+				//TODO: this is the bad way try to improve here
+				selfAddress, err := s.bridgeClient.AccountAddress()
+				if err != nil {
+					panic(err)
+				}
+
+				if selfAddress.String() != s.bridgeClient.cfg.RelayerAddress {
+					continue
+				}
+				//
 
 				if err := s.sendKeygenToBridgeNetwork(keygenBlock.Height, pubKey.Secp256K1, blame, keygenReq.GetMembers(), keygenReq.Type, keygenTime); err != nil {
 					/*s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()*/

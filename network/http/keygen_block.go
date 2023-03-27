@@ -63,6 +63,7 @@ type GetKeygenBlockResp struct {
 	} `json:"keygenBlock"`
 }
 
+var ErrNotFoundRegisterKeyGen = fmt.Errorf("error not found register keygen")
 var ErrNotFoundKeyGenBlock = fmt.Errorf("error not found keygen block")
 var ErrConnectionRefused = fmt.Errorf("error connection refused")
 
@@ -114,5 +115,65 @@ func GetKeygenBlock(url string, height int64) (*types.KeygenBlock, error) {
 				Members: resp.KeygenBlock.Keygens[0].Members,
 			},
 		},
+	}, nil
+}
+
+type GetRegisterKeygenResp struct {
+	Code           int `json:"code"`
+	RegisterKeygen []struct {
+		Index      string   `json:"index"`
+		Height     string   `json:"height"`
+		Members    []string `json:"members"`
+		PoolPubKey string   `json:"pool_pub_key"`
+	} `json:"registerKeygen"`
+}
+
+func GetRegisterKeygen(url string) (*types.RegisterKeygen, error) {
+	url = url + "/bridge/bridge/register_keygen"
+	url = fmt.Sprintf(url)
+	method := "GET"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	resp := &GetRegisterKeygenResp{}
+	if err = json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		if resp.Code == 5 {
+			return nil, ErrNotFoundKeyGenBlock
+		} else if resp.Code == 14 {
+			return nil, ErrConnectionRefused
+		} else {
+			return nil, fmt.Errorf("not found register keygen")
+		}
+	}
+	if len(resp.RegisterKeygen) == 0 {
+		return nil, ErrNotFoundRegisterKeyGen
+	}
+	t := resp.RegisterKeygen[0]
+	blockHeight, err := strconv.ParseInt(t.Height, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &types.RegisterKeygen{
+		Index:      t.Index,
+		Height:     blockHeight,
+		Members:    t.Members,
+		PoolPubKey: t.PoolPubKey,
 	}, nil
 }

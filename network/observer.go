@@ -3,14 +3,16 @@ package network
 import (
 	"fmt"
 	"sync"
+
+	"gitlab.com/thorchain/tss/go-tss/network/chain"
 )
 
 type Observer struct {
 	wg     *sync.WaitGroup
-	chains map[int]*Chain // eth -> chain object, btc -> chain object
+	chains map[string]chain.Chain // eth -> chain object, btc -> chain object
 }
 
-func NewObserver(chains map[int]*Chain) (*Observer, error) {
+func NewObserver(chains map[string]chain.Chain) (*Observer, error) {
 	res := &Observer{
 		wg:     &sync.WaitGroup{},
 		chains: chains,

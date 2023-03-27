@@ -1,0 +1,30 @@
+tss_addr: "127.0.0.1:8080"
+help: false
+log_level: "debug"
+pretty_log: false
+base_folder: ""
+bridge_signer_name: ""
+bridge_signer_password: ""
+bridge_config:
+  block_url: "http://localhost:26657"
+  state_url: "http://localhost:1317"
+  rpc_url: "tcp://127.0.0.1:26657"
+  relayer_address: "bridge1t00hhfcwn8ja9cv64yzal9mdcjepyc53w9y0ms"
+  signer_name: ""
+  signer_password: ""
+chains_config:
+  incognito: 
+    url: "http://localhost:8334"
+  btc:
+    url: ""
+tss_config:
+  party_time_out: 0
+  # key_gen_timeout: 30 # second
+  # key_sign_timeout: 30 # second
+  pre_param_timeout: 5 # min
+  enable_monitor: true
+p2p_config:
+  rendezvous_string: "rendezvous"
+  bootstrap_peers: ""
+  port: 6668
+  external_ip: ""

@@ -1,8 +1,9 @@
-package network
+package chain
 
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/rs/zerolog/log"
@@ -13,60 +14,35 @@ const (
 	BTCBlockConfirmations = 8
 )
 
-type ChainConfig struct {
-	validator string
+type BtcCfg struct {
+	ChainConfig
 }
 
-type MetaData struct {
-	IncTokenId string `json:"incTokenId"`
+func NewBtcCfg(c ChainConfig) *BtcCfg {
+	return &BtcCfg{ChainConfig: c}
 }
 
-type ShieldTxData struct {
-	RequestTx        string
-	Amount           int64
-	ToAddr           string
-	IncognitoAddress string
-	MetaData         []byte
+type Btc struct {
+	BaseChain
+	cfg BtcCfg
 }
 
-type UnshieldTxData struct {
-	RequestTx string // burn transaction from incognito chain. Tss can retrieve burn proof
-	Amount    string
-	ToAddr    string
-}
-
-type Chain struct {
-	ShieldTxsQueue   chan ShieldTxData
-	UnshieldTxsQueue chan UnshieldTxData
-	cfg              ChainConfig
-	stopCh           chan struct{}
-}
-
-func InitChains() map[int]*Chain {
-	res := make(map[int]*Chain) // 0 -> Incognitochain, 1 -> BTC, 2 -> ETH
-	return res
-}
-
-func (c *Chain) Start() error {
-	go c.scan()
-	go c.processTxIns()
-	return nil
-}
-
-func (c *Chain) processTxIns() {
-	for {
-		select {
-		case <-c.stopCh:
-			return
-		case Tx := <-c.ShieldTxsQueue: // external network
-			fmt.Println(Tx)
-		case Tx := <-c.UnshieldTxsQueue: // Incognitochain
-			fmt.Println(Tx)
-		}
+func NewBtc(cfg BtcCfg, baseChain BaseChain) *Btc {
+	return &Btc{
+		BaseChain: baseChain,
+		cfg:       cfg,
 	}
 }
 
-func (c *Chain) scan() error {
+func (b *Btc) Start() error {
+	go b.Scan()
+	go b.ProcessTxsIn()
+	return nil
+}
+
+func (b *Btc) Scan() error {
+	wg.Wait()
+
 	//TODO: @thach scan external network here then return value to TxsQueue channel
 
 	// call json rpc to external network full node (from external network)
@@ -88,12 +64,25 @@ func (c *Chain) scan() error {
 	}
 
 	// todo: update network configuration
-	processBtcDeposits(btcClient, c, &chaincfg.TestNet3Params, c.cfg.validator)
+	b.processBtcDeposits(btcClient, &chaincfg.TestNet3Params, b.cfg.validator)
 
 	return nil
 }
 
-func processBtcDeposits(btcClient *rpcclient.Client, c *Chain, chainParams *chaincfg.Params, validatorAdd string) {
+func (b *Btc) ProcessTxsIn() {
+	for {
+		select {
+		case <-b.stopCh:
+			return
+		case Tx := <-b.ShieldTxsQueue: // external network
+			fmt.Println(Tx)
+		case Tx := <-b.UnshieldTxsQueue: // Incognitochain
+			fmt.Println(Tx)
+		}
+	}
+}
+
+func (b *Btc) processBtcDeposits(btcClient *rpcclient.Client, chainParams *chaincfg.Params, validatorAdd string) {
 	// todo: query current scanned bitcoin height
 	currentBtcHeight := int64(0)
 	btcBestHeight, err := btcClient.GetBlockCount()
@@ -140,7 +129,7 @@ func processBtcDeposits(btcClient *rpcclient.Client, c *Chain, chainParams *chai
 				}
 				// todo: validate incognito payment address in memo
 
-				c.ShieldTxsQueue <- ShieldTxData{
+				b.ShieldTxsQueue <- ShieldTxData{
 					RequestTx:        tx.TxHash().String(),
 					Amount:           out.Value,
 					ToAddr:           addrStr,

@@ -13,8 +13,10 @@ import (
 	"gitlab.com/thorchain/binance-sdk/common/types"
 
 	"gitlab.com/thorchain/tss/go-tss/common"
+	"gitlab.com/thorchain/tss/go-tss/config"
 	"gitlab.com/thorchain/tss/go-tss/conversion"
 	"gitlab.com/thorchain/tss/go-tss/network"
+	"gitlab.com/thorchain/tss/go-tss/network/chain"
 	"gitlab.com/thorchain/tss/go-tss/p2p"
 	"gitlab.com/thorchain/tss/go-tss/tss"
 )
@@ -29,12 +31,18 @@ var (
 
 func main() {
 
-	// Parse the cli into configuration structs
-	tssConf, p2pConf, bConf, _ := parseFlags()
-	if help {
+	if err := config.InitConfig(); err != nil {
+		panic(err)
+	}
+
+	//// Parse the cli into configuration structs
+	//tssConf, p2pConf, bConf, _ := parseFlags()
+	c := config.GetConfig()
+	if c.Help {
 		flag.PrintDefaults()
 		return
 	}
+
 	// Setup logging
 	golog.SetAllLoggers(golog.LevelInfo)
 	_ = golog.SetLogLevel("tss-lib", "INFO")
@@ -47,12 +55,12 @@ func main() {
 		types.Network = types.TestNetwork
 	}
 
-	kb, err := network.GetKeyringKeybase("", bConf.SignerName, bConf.SignerPasswd)
+	kb, err := network.GetKeyringKeybase("", c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd)
 	if err != nil {
 		panic(err)
 	}
 
-	keys := network.NewKeys(bConf.SignerName, bConf.SignerPasswd, kb)
+	keys := network.NewKeys(c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd, kb)
 
 	// setup TSS signing
 	priKey, err := keys.GetPrivateKey()
@@ -75,19 +83,19 @@ func main() {
 
 	// init tss module
 	tss, err := tss.NewTss(
-		p2p.AddrList(p2pConf.BootstrapPeers),
-		p2pConf.Port,
+		p2p.AddrList(c.P2pConfig.BootstrapPeers),
+		c.P2pConfig.Port,
 		tmPriKey,
-		p2pConf.RendezvousString,
+		c.P2pConfig.RendezvousString,
 		baseFolder,
-		tssConf,
+		common.TssConfig(*c.TssConfig),
 		nil,
-		p2pConf.ExternalIP,
+		c.P2pConfig.ExternalIP,
 	)
 	if nil != err {
 		log.Fatal(err)
 	}
-	s := NewTssHttpServer(tssAddr, tss)
+	s := NewTssHttpServer(c.TssAddr, tss)
 	go func() {
 		if err := s.Start(); err != nil {
 			fmt.Println(err)
@@ -96,13 +104,13 @@ func main() {
 
 	signer, err := network.NewSigner(
 		tss,
-		bConf.BlockUrl, bConf.StateUrl,
+		c.BridgeConfig.BlockUrl, c.BridgeConfig.StateUrl,
 		keys,
 		network.NewBridgeClientConfig(network.NewChainClientConfig(
-			network.BridgeChainId,
-			bConf.BlockUrl, bConf.StateUrl, bConf.RpcUrl,
-			bConf.SignerName, bConf.SignerPasswd,
-		), bConf.RelayerAddress),
+			chain.BridgeChainId,
+			c.BridgeConfig.BlockUrl, c.BridgeConfig.StateUrl, c.BridgeConfig.RpcUrl,
+			c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd,
+		), c.BridgeConfig.RelayerAddress),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -110,13 +118,11 @@ func main() {
 	if err := signer.Start(); err != nil {
 		log.Fatal(err)
 	}
-	chains := network.InitChains()
+	chains := chain.InitChains()
 	observer, err := network.NewObserver(chains)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// observers -> observer eth -> listen eth network
-	// observers -> observer btc -> listen btc network
 	if err := observer.Start(); err != nil {
 		log.Fatal(err)
 	}
@@ -129,7 +135,7 @@ func main() {
 }
 
 // parseFlags - Parses the cli flags
-func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.BridgeConfig, chainConfs map[string]common.ChainConfig) {
+func parseFlags() (tssConf config.TssConfig, p2pConf config.P2pConfig, bConf config.BridgeConfig, chainConfs map[string]config.ChainConfig) {
 	// we setup the configure for the general configuration
 	flag.StringVar(&tssAddr, "tss-port", "127.0.0.1:8080", "tss port")
 	flag.BoolVar(&help, "h", false, "Display Help")
@@ -154,8 +160,7 @@ func parseFlags() (tssConf common.TssConfig, p2pConf p2p.Config, bConf common.Br
 	flag.StringVar(&bConf.SignerName, "bridge_signer_name", os.Getenv("SIGNER_NAME"), "signer name (validator name)")
 	flag.StringVar(&bConf.SignerPasswd, "bridge_signer_password", os.Getenv("SIGNER_PASSWD"), "signer password")
 	flag.StringVar(&bConf.RelayerAddress, "bridge_relayer_address", "bridge1t00hhfcwn8ja9cv64yzal9mdcjepyc53w9y0ms", "relayer address")
-	flag.StringVar(&bConf.RpcUrl, "bridge_rpc_url", "tcp://127.0.0.1:26657", "url for bridge chain")
-	//flag.StringVar(&bConf.SignerPrivateKey, "bridge_signer_private_key", "", "unarmor signer private key")
+	flag.StringVar(&bConf.RpcUrl, "bridge_rpc_url", "tcp://127.0.0.1:26657", "url for rpc bridge chain")
 	flag.Parse()
 	return
 }

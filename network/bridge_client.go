@@ -89,12 +89,24 @@ type BridgeClient struct {
 }
 
 func (b *BridgeClient) sendKeygenTx(creator, poolPk string, blame *types.Blame, input []string, keygenType int32, chains []string, height, keygenTime int64) error {
-
 	keygenMsg, err := b.getKeygenStdTx(creator, poolPk, blame, input, keygenType, chains, height, keygenTime)
 	if err != nil {
 		return fmt.Errorf("fail to get keygen id: %w", err)
 	}
 	txId, err := b.broadcast(keygenMsg)
+	if err != nil {
+		return fmt.Errorf("fail to send the tx to bridge network: %w", err)
+	}
+	fmt.Println("bridge network tx hash", txId, "sign and send to bridge network successfully")
+	return nil
+}
+
+func (b *BridgeClient) sendRegisterKeygenTx(creator, msg, signature string) error {
+	registerKeygenMsg, err := b.getRegisterKeygenStdTx(creator, msg, signature)
+	if err != nil {
+		return fmt.Errorf("fail to get registerKeygenMsg id: %w", err)
+	}
+	txId, err := b.broadcast(registerKeygenMsg)
 	if err != nil {
 		return fmt.Errorf("fail to send the tx to bridge network: %w", err)
 	}
@@ -191,6 +203,10 @@ func (b *BridgeClient) getAccountNumberAndSequenceNumber() (uint64, uint64, erro
 	}
 
 	return uint64(accountInfo.AccountNumber), uint64(accountInfo.Sequence), nil
+}
+
+func (b *BridgeClient) getRegisterKeygenStdTx(creator, msg, signature string) (sdk.Msg, error) {
+	return types.NewMsgRegisterTssPool(creator, msg, signature)
 }
 
 func (b *BridgeClient) getKeygenStdTx(creator, poolPubKey string, blame *types.Blame, inputPks []string, keygenType int32, chains []string, height, keygenTime int64) (sdk.Msg, error) {

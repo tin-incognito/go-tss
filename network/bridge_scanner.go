@@ -9,16 +9,19 @@ import (
 )
 
 type BridgeScanner struct {
+	HasRegistered bool
 	BlockScanner
-	KeygenCh chan *types.KeygenBlock
-	txOutCh  chan struct{}
+	KeygenCh       chan *types.KeygenBlock
+	RegisterKeygen chan *types.RegisterKeygen
+	txOutCh        chan struct{}
 }
 
 func NewBridgeScanner(blockUrl, stateUrl string) *BridgeScanner {
 	return &BridgeScanner{
-		BlockScanner: *NewBlockScanner(blockUrl, stateUrl),
-		KeygenCh:     make(chan *types.KeygenBlock),
-		txOutCh:      make(chan struct{}),
+		BlockScanner:   *NewBlockScanner(blockUrl, stateUrl),
+		KeygenCh:       make(chan *types.KeygenBlock),
+		RegisterKeygen: make(chan *types.RegisterKeygen),
+		txOutCh:        make(chan struct{}),
 	}
 }
 
@@ -64,6 +67,24 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 					}
 				}
 			}
+			if !b.HasRegistered {
+				registerKeygen, err := http.GetRegisterKeygen(b.stateUrl)
+				if err == nil {
+					b.HasRegistered = true
+					fmt.Println("Get registerKeygen", b.stateUrl, nextBlock, "Detect registerKeygen")
+					b.RegisterKeygen <- registerKeygen
+				} else {
+					if err == http.ErrConnectionRefused {
+						time.Sleep(BridgeNetworkBlockTime)
+						continue
+					} else {
+						if err != http.ErrNotFoundRegisterKeyGen {
+							fmt.Println("err:", err)
+						}
+					}
+				}
+			}
+
 			b.currentBlock = nextBlock
 			time.Sleep(BridgeNetworkBlockTime)
 		}

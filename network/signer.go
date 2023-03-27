@@ -2,10 +2,13 @@ package network
 
 import (
 	"bridge/x/bridge/types"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
+	"gitlab.com/thorchain/tss/go-tss/network/chain"
 	"gitlab.com/thorchain/tss/go-tss/tss"
 )
 
@@ -17,6 +20,7 @@ type Signer struct {
 	ChainClients  map[int]*ChainClient
 	blockScanners map[int]*BlockScanner
 	tssKeygen     *Keygen
+	tssKeysign    *Keysign
 
 	//logger        zerolog.Logger
 }
@@ -28,6 +32,7 @@ func NewSigner(tssSever *tss.TssServer, blockUrl, stateUrl string, keys *Keys, c
 		bridgeScanner: NewBridgeScanner(blockUrl, stateUrl),
 		blockScanners: make(map[int]*BlockScanner),
 		tssKeygen:     NewTssKeygen(tssSever),
+		tssKeysign:    NewTssKeysign(tssSever),
 		bridgeClient:  NewBridgeClient(blockUrl, stateUrl, keys, cfg),
 	}
 	return res, nil
@@ -37,7 +42,7 @@ func (s *Signer) Start() error {
 	fmt.Println("Start signer")
 	go s.processTxnOut()
 
-	go s.processKeygen(s.bridgeScanner.KeygenCh)
+	go s.processKeygen(s.bridgeScanner.KeygenCh, s.bridgeScanner.RegisterKeygen)
 
 	go s.signTransactions()
 
@@ -47,6 +52,8 @@ func (s *Signer) Start() error {
 		go v.Start()
 	}
 
+	go s.tssKeysign.Start()
+
 	return nil
 }
 
@@ -54,11 +61,42 @@ func (s *Signer) processTxnOut() {
 
 }
 
-func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
+func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan *types.RegisterKeygen) {
 	for {
 		select {
 		case <-s.stopCh:
 			return
+		case registerKeygen := <-registerKeygenCh:
+			fmt.Println("Start processing registerKeygen")
+
+			msg := chain.RegisterKeygen{PoolPubKey: registerKeygen.PoolPubKey, Members: registerKeygen.Members}
+			data, err := json.Marshal(msg)
+			if err != nil {
+				panic(err)
+			}
+
+			sig, _, err := s.tssKeysign.RemoteSign(data, registerKeygen.PoolPubKey, registerKeygen.Height)
+			if err != nil {
+				panic(err)
+			}
+
+			//TODO: this is the bad way try to improve here
+			selfAddress, err := s.bridgeClient.AccountAddress()
+			if err != nil {
+				panic(err)
+			}
+
+			if selfAddress.String() != s.bridgeClient.cfg.RelayerAddress {
+				continue
+			}
+			//
+
+			if err := s.sendRegisterKeygenToBridgeNetwork(data, sig); err != nil {
+				/*s.errCounter.WithLabelValues("fail_to_broadcast_keygen", "").Inc()*/
+				/*s.logger.Error().Err(err).Msg("fail to broadcast keygen")*/
+				panic(err)
+			}
+
 		case keygenBlock := <-ch:
 			fmt.Println("Start processing keygen block")
 
@@ -115,12 +153,22 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock) {
 	}
 }
 
+func (s *Signer) sendRegisterKeygenToBridgeNetwork(msg []byte, sig []byte) error {
+	encodedSig := base64.StdEncoding.EncodeToString(sig)
+	encodedMsg := base64.StdEncoding.EncodeToString(msg)
+	selfAddress, err := s.bridgeClient.AccountAddress()
+	if err != nil {
+		return err
+	}
+	return s.bridgeClient.sendRegisterKeygenTx(selfAddress.String(), encodedMsg, encodedSig)
+}
+
 func (s *Signer) sendKeygenToBridgeNetwork(height int64, poolPk string, blame types.Blame, input []string, keygenType int32, keygenTime int64) error {
 	selfAddress, err := s.bridgeClient.AccountAddress()
 	if err != nil {
 		return err
 	}
-	return s.bridgeClient.sendKeygenTx(selfAddress.String(), poolPk, &blame, input, keygenType, []string{BridgeChainId}, height, keygenTime)
+	return s.bridgeClient.sendKeygenTx(selfAddress.String(), poolPk, &blame, input, keygenType, []string{chain.BridgeChainId}, height, keygenTime)
 }
 
 func (s *Signer) signTransactions() {

@@ -29,7 +29,7 @@ func (kg *Keygen) GenerateNewKey(keygenBlockHeight int64, pKeys []string) (types
 	}
 	keyGenReq := keygen.Request{
 		Keys:        keys,
-		Version:     "0.14.1",
+		Version:     "0.14.0",
 		BlockHeight: keygenBlockHeight,
 	}
 

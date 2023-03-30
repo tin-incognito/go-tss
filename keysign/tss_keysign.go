@@ -82,19 +82,23 @@ func (tKeySign *TssKeySign) startBatchSigning(keySignPartyMap *sync.Map, msgNum 
 
 // signMessage
 func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem storage.KeygenLocalState, parties []string) ([]*tsslibcommon.ECSignature, error) {
+	fmt.Println(300)
 	partiesID, localPartyID, err := conversion.GetParties(parties, localStateItem.LocalPartyKey)
 	if err != nil {
 		return nil, fmt.Errorf("fail to form key sign party: %w", err)
 	}
+	fmt.Println(301)
 
 	if !common.Contains(partiesID, localPartyID) {
 		tKeySign.logger.Info().Msgf("we are not in this rounds key sign")
 		return nil, nil
 	}
+	fmt.Println(302)
 	threshold, err := conversion.GetThreshold(len(localStateItem.ParticipantKeys))
 	if err != nil {
 		return nil, errors.New("fail to get threshold")
 	}
+	fmt.Println(303)
 
 	outCh := make(chan btss.Message, 2*len(partiesID)*len(msgsToSign))
 	endCh := make(chan *signing.SignatureData, len(partiesID)*len(msgsToSign))
@@ -119,6 +123,7 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 		keySignParty := signing.NewLocalParty(m, params, localStateItem.LocalData, outCh, endCh)
 		keySignPartyMap.Store(moniker, keySignParty)
 	}
+	fmt.Println(304)
 
 	blameMgr := tKeySign.tssCommonStruct.GetBlameMgr()
 	partyIDMap := conversion.SetupPartyIDMap(partiesID)
@@ -128,6 +133,7 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 		tKeySign.logger.Error().Err(err).Msgf("error in creating mapping between partyID and P2P ID")
 		return nil, err
 	}
+	fmt.Println(305)
 
 	tKeySign.tssCommonStruct.SetPartyInfo(&common.PartyInfo{
 		PartyMap:   keySignPartyMap,
@@ -155,6 +161,7 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 		close(tKeySign.commStopChan)
 		return nil, fmt.Errorf("fail to process key sign: %w", err)
 	}
+	fmt.Println(306)
 
 	select {
 	case <-time.After(time.Second * 5):
@@ -162,8 +169,10 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 	case <-tKeySign.tssCommonStruct.GetTaskDone():
 		close(tKeySign.commStopChan)
 	}
+	fmt.Println(307)
 	keySignWg.Wait()
 
+	fmt.Println(308)
 	tKeySign.logger.Info().Msgf("%s successfully sign the message", tKeySign.p2pComm.GetHost().ID().String())
 	sort.SliceStable(results, func(i, j int) bool {
 		a := new(big.Int).SetBytes(results[i].M)
@@ -174,6 +183,7 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 		}
 		return true
 	})
+	fmt.Println(309)
 
 	return results, nil
 }
@@ -185,15 +195,19 @@ func (tKeySign *TssKeySign) processKeySign(reqNum int, errChan chan struct{}, ou
 
 	tssConf := tKeySign.tssCommonStruct.GetConf()
 	blameMgr := tKeySign.tssCommonStruct.GetBlameMgr()
+	fmt.Println(400)
 
 	for {
 		select {
 		case <-errChan: // when key sign return
+			fmt.Println(401)
 			tKeySign.logger.Error().Msg("key sign failed")
 			return nil, errors.New("error channel closed fail to start local party")
 		case <-tKeySign.stopChan: // when TSS processor receive signal to quit
+			fmt.Println(402)
 			return nil, errors.New("received exit signal")
 		case <-time.After(tssConf.KeySignTimeout):
+			fmt.Println(403)
 			// we bail out after KeySignTimeoutSeconds
 			tKeySign.logger.Error().Msgf("fail to sign message with %s", tssConf.KeySignTimeout.String())
 			lastMsg := blameMgr.GetLastMsg()
@@ -247,6 +261,7 @@ func (tKeySign *TssKeySign) processKeySign(reqNum int, errChan chan struct{}, ou
 
 			return nil, blame.ErrTssTimeOut
 		case msg := <-outCh:
+			fmt.Println(404)
 			tKeySign.logger.Debug().Msgf(">>>>>>>>>>key sign msg: %s", msg.String())
 			tKeySign.tssCommonStruct.GetBlameMgr().SetLastMsg(msg)
 			err := tKeySign.tssCommonStruct.ProcessOutCh(msg, messages.TSSKeySignMsg)
@@ -255,6 +270,7 @@ func (tKeySign *TssKeySign) processKeySign(reqNum int, errChan chan struct{}, ou
 			}
 
 		case msg := <-endCh:
+			fmt.Println(405)
 			signatures = append(signatures, msg.GetSignature())
 			if len(signatures) == reqNum {
 				tKeySign.logger.Debug().Msg("we have done the key sign")

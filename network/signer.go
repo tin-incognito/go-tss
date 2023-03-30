@@ -77,7 +77,8 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 
 			sig, _, err := s.tssKeysign.RemoteSign(data, registerKeygen.PoolPubKey, registerKeygen.Height)
 			if err != nil {
-				panic(err)
+				registerKeygenCh <- registerKeygen
+				continue
 			}
 
 			//TODO: this is the bad way try to improve here

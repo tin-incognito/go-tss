@@ -1,7 +1,6 @@
 package network
 
 import (
-	"bridge/x/bridge/types"
 	"encoding/base64"
 	"fmt"
 	"math/big"
@@ -190,7 +189,7 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) 
 	tssMsg := keysign.Request{
 		PoolPubKey:  poolPubKey,
 		Messages:    msgToSign,
-		Version:     "0.14.1",
+		Version:     "0.14.0",
 		BlockHeight: blockHeight,
 	}
 
@@ -245,19 +244,20 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) 
 	fmt.Println(3)
 
 	// copy blame to our own struct
-	blame := types.Blame{
-		FailReason: keySignResp.Blame.FailReason,
-		IsUnicast:  keySignResp.Blame.IsUnicast,
-		//BlameNodes: make([]types.Node, len(keySignResp.Blame.BlameNodes)),
-	}
+	/*blame := types.Blame{*/
+	/*FailReason: keySignResp.Blame.FailReason,*/
+	/*IsUnicast:  keySignResp.Blame.IsUnicast,*/
+	/*//BlameNodes: make([]types.Node, len(keySignResp.Blame.BlameNodes)),*/
+	/*}*/
 
 	fmt.Println(4)
 
-	for i, n := range keySignResp.Blame.BlameNodes {
-		blame.BlameNodes[i].Pubkey = n.Pubkey
-		blame.BlameNodes[i].BlameData = n.BlameData
-		blame.BlameNodes[i].BlameSignature = n.BlameSignature
-	}
+	//fmt.Println("keySignResp.Blame.BlameNodes:", keySignResp.Blame.BlameNodes)
+	/*for i, n := range keySignResp.Blame.BlameNodes {*/
+	/*blame.BlameNodes[i].Pubkey = n.Pubkey*/
+	/*blame.BlameNodes[i].BlameData = n.BlameData*/
+	/*blame.BlameNodes[i].BlameSignature = n.BlameSignature*/
+	/*}*/
 
 	fmt.Println(5)
 

@@ -27,3 +27,7 @@ log
 *.ldb
 *.out
 cmd/tss/tss
+cmd/tss-benchgen/tss-benchgen
+cmd/tss-benchsign/tss-benchsign
+cmd/tss-recovery/tss-recovery
+localstate*

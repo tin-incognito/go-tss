@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -34,6 +35,7 @@ func (ps *PeerStatus) setLeaderResponse(resp *messages.JoinPartyLeaderComm) {
 }
 
 func NewPeerStatus(peerNodes []peer.ID, myPeerID peer.ID, leader string, threshold int) *PeerStatus {
+
 	dat := make(map[peer.ID]bool)
 	for _, el := range peerNodes {
 		if el == myPeerID {
@@ -76,10 +78,12 @@ func (ps *PeerStatus) getPeersStatus() ([]peer.ID, []peer.ID) {
 }
 
 func (ps *PeerStatus) updatePeer(peerNode peer.ID) (bool, error) {
+	fmt.Printf("Update peer %v \n", peerNode.Pretty())
 	ps.peerStatusLock.Lock()
 	defer ps.peerStatusLock.Unlock()
 	val, ok := ps.peersResponse[peerNode]
 	if !ok {
+		fmt.Printf("Peer %v not found\n", peerNode.Pretty())
 		return false, errors.New("key not found")
 	}
 
@@ -88,11 +92,13 @@ func (ps *PeerStatus) updatePeer(peerNode peer.ID) (bool, error) {
 			ps.peersResponse[peerNode] = true
 			return true, nil
 		}
+		fmt.Printf("Peer %v not a leader and already true\n", peerNode.Pretty())
 		return false, nil
 	}
 
 	// we already have enough participants
 	if ps.reqCount >= ps.threshold {
+		fmt.Printf("Peer %v we already have enough participants\n", peerNode.Pretty())
 		return false, nil
 	}
 	if !val {
@@ -102,5 +108,6 @@ func (ps *PeerStatus) updatePeer(peerNode peer.ID) (bool, error) {
 			return true, nil
 		}
 	}
+	fmt.Printf("Peer %v...\n", peerNode.Pretty())
 	return false, nil
 }

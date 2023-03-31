@@ -414,11 +414,13 @@ func (pc *PartyCoordinator) joinPartyMember(msgID string, leader string, thresho
 }
 
 func (pc *PartyCoordinator) joinPartyLeader(msgID string, peers []string, threshold int, sigChan chan string) ([]peer.ID, error) {
+	fmt.Println("Join with role LEADER")
 	peerGroup, err := pc.createJoinPartyGroups(msgID, pc.host.ID().String(), peers, threshold)
 	if err != nil {
 		pc.logger.Error().Err(err).Msg("fail to create the join party group")
 		return nil, err
 	}
+
 	peerGroup.peerStatusLock.Lock()
 	peerGroup.leader = pc.host.ID().String()
 	peerGroup.peerStatusLock.Unlock()
@@ -439,10 +441,12 @@ func (pc *PartyCoordinator) joinPartyLeader(msgID string, peers []string, thresh
 				return
 
 			case <-time.After(pc.timeout):
+				fmt.Printf("leader waits for peers timeout time freaking out \n")
 				// timeout, reporting to peers before their timeout
 				pc.logger.Error().Msg("leader waits for peers timeout")
 				return
 			case result := <-sigChan:
+				fmt.Printf("Received signature %v\n", sigChan)
 				sigNotify = result
 			}
 		}
@@ -480,12 +484,15 @@ func (pc *PartyCoordinator) joinPartyLeader(msgID string, peers []string, thresh
 func (pc *PartyCoordinator) JoinPartyWithLeader(msgID string, blockHeight int64, peers []string, threshold int, signChan chan string) ([]peer.ID, string, error) {
 	leader, err := LeaderNode(msgID, blockHeight, peers)
 	if err != nil {
+		panic(err)
 		return nil, "", err
 	}
 	if pc.host.ID().String() == leader {
+		fmt.Println("I'm the leader")
 		onlines, err := pc.joinPartyLeader(msgID, peers, threshold, signChan)
 		return onlines, leader, err
 	}
+	fmt.Println("I'm not the leader")
 	// now we are just the normal peer
 	onlines, err := pc.joinPartyMember(msgID, leader, threshold, signChan)
 	return onlines, leader, err

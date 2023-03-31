@@ -166,46 +166,45 @@ func (t *TssServer) requestToMsgId(request interface{}) (string, error) {
 }
 
 func (t *TssServer) joinParty(msgID, version string, blockHeight int64, participants []string, threshold int, sigChan chan string) ([]peer.ID, string, error) {
-	fmt.Println(500)
+	fmt.Printf("Start join party, block height %v, participants %+v, threshold %v\n", blockHeight, participants, threshold)
 	oldJoinParty, err := conversion.VersionLTCheck(version, messages.NEWJOINPARTYVERSION)
 	if err != nil {
 		return nil, "", fmt.Errorf("fail to parse the version with error:%w", err)
 	}
-	fmt.Println(501)
+	fmt.Println("Check old party ", oldJoinParty)
 	if oldJoinParty {
-		fmt.Println(502)
+		fmt.Println("Leadless join party")
 		t.logger.Info().Msg("we apply the leadless join party")
 		peerIDs, err := conversion.GetPeerIDsFromPubKeys(participants)
 		if err != nil {
+			panic(fmt.Errorf("fail to convert pub key to peer id: %w", err))
 			return nil, "NONE", fmt.Errorf("fail to convert pub key to peer id: %w", err)
 		}
-		fmt.Println(503)
 		var peersIDStr []string
 		for _, el := range peerIDs {
 			peersIDStr = append(peersIDStr, el.String())
 		}
-		fmt.Println(504)
+		fmt.Printf("list peerID of parties %+v\n", peersIDStr)
 		onlines, err := t.partyCoordinator.JoinPartyWithRetry(msgID, peersIDStr)
 		return onlines, "NONE", err
 	} else {
-		fmt.Println(505)
+		fmt.Println("Join party with leader")
 		t.logger.Info().Msg("we apply the join party with a leader")
 
 		if len(participants) == 0 {
 			t.logger.Error().Msg("we fail to have any participants or passed by request")
+			fmt.Println("we fail to have any participants or passed by request")
 			return nil, "", errors.New("no participants can be found")
 		}
-		fmt.Println(506)
 		peersID, err := conversion.GetPeerIDsFromPubKeys(participants)
 		if err != nil {
 			return nil, "", errors.New("fail to convert the public key to peer ID")
 		}
-		fmt.Println(507)
 		var peersIDStr []string
 		for _, el := range peersID {
 			peersIDStr = append(peersIDStr, el.String())
 		}
-		fmt.Println(508)
+		fmt.Printf("list peerID of parties %+v\n", peersIDStr)
 
 		return t.partyCoordinator.JoinPartyWithLeader(msgID, blockHeight, peersIDStr, threshold, sigChan)
 	}

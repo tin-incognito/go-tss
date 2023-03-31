@@ -74,9 +74,10 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 			if err != nil {
 				panic(err)
 			}
-
+			fmt.Printf("Generated RegisterKeygen msg %+v from registerKeygen request %v\n", msg, registerKeygen.String())
 			sig, _, err := s.tssKeysign.RemoteSign(data, registerKeygen.PoolPubKey, registerKeygen.Height)
 			if err != nil {
+				fmt.Printf("RemoteSign got error %v, msg data %v re-append to queue\n", err, data)
 				registerKeygenCh <- registerKeygen
 				continue
 			}
@@ -88,6 +89,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 			}
 
 			if selfAddress.String() != s.bridgeClient.cfg.RelayerAddress {
+				fmt.Printf("self address %v is different from relayer address %v, so we not send keygen to bridge network\n", selfAddress.String(), s.bridgeClient.cfg.RelayerAddress)
 				continue
 			}
 			//
@@ -114,7 +116,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 				keygenStart := time.Now()
 				pubKey, blame, err := s.tssKeygen.GenerateNewKey(keygenBlock.Height, keygenReq.GetMembers())
 				if blame.FailReason != "" {
-					err := fmt.Errorf("reason: %s, nodes %+v", blame.FailReason, blame.BlameNodes)
+					err := fmt.Errorf("reason: %s, nodes %+v, err %v", blame.FailReason, blame.BlameNodes, err)
 					/*s.logger.Error().Err(err).Msg("Blame")*/
 					panic(err)
 				}
@@ -124,6 +126,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 					/*s.logger.Error().Err(err).Msg("fail to generate new pubkey")*/
 					panic(err)
 				}
+				fmt.Printf("Generated pubkey %v from keygen request id %v, keygen payload %v\n", pubKey.String(), keygenReq.Id, keygenReq.String())
 				/*if pubKey.Secp256K1 != "" {*/
 
 				/*}*/
@@ -139,6 +142,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 				}
 
 				if selfAddress.String() != s.bridgeClient.cfg.RelayerAddress {
+					fmt.Printf("self address %v is different from relayer address %v, so we not send keygen to bridge network\n", selfAddress.String(), s.bridgeClient.cfg.RelayerAddress)
 					continue
 				}
 				//
@@ -148,7 +152,7 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 					/*s.logger.Error().Err(err).Msg("fail to broadcast keygen")*/
 					panic(err)
 				}
-
+				fmt.Printf("sent key gen to bridge network %v\n", s.bridgeClient.cfg.RelayerAddress)
 			}
 		}
 	}

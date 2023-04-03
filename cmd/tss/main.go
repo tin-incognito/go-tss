@@ -93,12 +93,12 @@ func main() {
 		c.P2pConfig.ExternalIP,
 	)
 	if nil != err {
-		log.Fatal(err)
+		panic(err)
 	}
 	s := NewTssHttpServer(c.TssAddr, tss)
 	go func() {
 		if err := s.Start(); err != nil {
-			fmt.Println(err)
+			panic(err)
 		}
 	}()
 
@@ -112,11 +112,12 @@ func main() {
 			c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd,
 		), c.BridgeConfig.RelayerAddress),
 	)
+
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	if err := signer.Start(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	chains := chain.InitChains()
 	observer, err := network.NewObserver(chains)

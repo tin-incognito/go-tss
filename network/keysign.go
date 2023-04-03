@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"sort"
 	"sync"
 	"time"
@@ -52,6 +53,7 @@ type TssKeySignTask struct {
 func (ks *Keysign) Start() {
 	ks.wg.Add(1)
 	go ks.processKeySignTasks()
+
 }
 
 func (ks *Keysign) RemoteSign(msg []byte, poolPubKey string, blockHeight int64) ([]byte, []byte, error) {
@@ -66,6 +68,7 @@ func (ks *Keysign) RemoteSign(msg []byte, poolPubKey string, blockHeight int64) 
 		Resp:        make(chan TssKeySignResult, 1),
 		BlockHeight: blockHeight,
 	}
+	fmt.Printf("Create task %+v and send to queue\n", task)
 	ks.taskQueue <- &task
 	select {
 	case resp := <-task.Resp:
@@ -134,7 +137,7 @@ func (ks *Keysign) processKeySignTasks() {
 			// requested to exit
 			return
 		case t := <-ks.taskQueue:
-			fmt.Println("Enter task queue")
+			fmt.Printf("task %v Enter task queue\n", t.Msg)
 			taskLock.Lock()
 			_, ok := tasks[t.PoolPubKey]
 			if !ok {
@@ -150,7 +153,10 @@ func (ks *Keysign) processKeySignTasks() {
 			// if it has more than maxKeysignPerRequest(15) in the queue , it will only send the first maxKeysignPerRequest(15) of them
 			// the reset will be send in the next request
 			taskLock.Lock()
+			xID := rand.Int63()
+			fmt.Println("Check KeySignTasks, ID ", xID)
 			for k, v := range tasks {
+				fmt.Printf("Pool Pubkey %v, value %+v, threadID %v\n", k, v, xID)
 				if len(v) == 0 {
 					delete(tasks, k)
 					continue
@@ -169,6 +175,7 @@ func (ks *Keysign) processKeySignTasks() {
 				ks.wg.Add(1)
 				signingTask := v[:totalTasks]
 				tasks[k] = v[totalTasks:]
+				fmt.Printf("Perform signing task %v %+v xID %v\n", k, signingTask, xID)
 				go ks.toLocalTSSSigner(k, signingTask)
 			}
 			taskLock.Unlock()
@@ -209,7 +216,7 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) 
 	keySignResp, err := ks.server.KeySign(tssMsg)
 	if err != nil {
 		//s.setTssKeySignTasksFail(tasks, fmt.Errorf("fail tss keysign: %w", err))
-		fmt.Println("err:", err)
+		fmt.Printf("Can not sign task %v msgs %v, err: %v\n", tssMsg.PoolPubKey, tssMsg.Messages, err)
 		return
 	}
 	fmt.Println(1)

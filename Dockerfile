@@ -4,7 +4,7 @@ RUN apk update && apk add --no-cache git
 WORKDIR /go/src/app
 
 COPY . .
-COPY ../ ../bridge
+COPY ../ ../bridge-network
 
 RUN go mod download
 WORKDIR /go/src/app/cmd/tss

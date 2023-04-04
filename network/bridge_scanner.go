@@ -61,7 +61,8 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 				time.Sleep(BridgeNetworkBlockTime)
 				continue
 			} else {
-				panic(err)
+				fmt.Printf("Get key gen block got err %v \n", err)
+				// panic(err)
 				if err == http.ErrConnectionRefused {
 					time.Sleep(BridgeNetworkBlockTime)
 					continue
@@ -78,7 +79,8 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 					fmt.Println("Get registerKeygen", b.stateUrl, nextBlock, "Detect registerKeygen")
 					b.RegisterKeygen <- registerKeygen
 				} else {
-					panic(err)
+					fmt.Printf("Get register keygen block got err %v \n", err)
+					// panic(err)
 					if err == http.ErrConnectionRefused {
 						time.Sleep(BridgeNetworkBlockTime)
 						continue

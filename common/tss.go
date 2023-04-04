@@ -56,7 +56,7 @@ func NewTssCommon(peerID string, broadcastChannel chan *messages.BroadcastMsgCha
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 	return &TssCommon{
 		conf:                        conf,
-		logger:                      zerolog.New(os.Stdout).With().Str("module", "tsscommon").Logger(),
+		logger:                      zerolog.New(os.Stdout).With().Str("module", "tsscommon").Caller().Logger(),
 		partyLock:                   &sync.Mutex{},
 		partyInfo:                   nil,
 		PartyIDtoP2PID:              make(map[string]peer.ID),
@@ -755,7 +755,7 @@ func (t *TssCommon) processTSSMsg(wireMsg *messages.WireMessage, msgType message
 	pk = keyBytes
 	ok = verifySignature(pk, wireMsg.Message, wireMsg.Sig, t.msgID)
 	if !ok {
-		t.logger.Error().Msg("fail to verify the signature")
+		t.logger.Error().Msgf("fail to verify the signature")
 		return errors.New("signature verify failed")
 	}
 

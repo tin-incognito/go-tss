@@ -79,7 +79,7 @@ func InitLog(level string, pretty bool, serviceValue string) {
 		out = zerolog.ConsoleWriter{Out: os.Stdout}
 	}
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
-	log.Logger = log.Output(out).With().Str("service", serviceValue).Logger()
+	log.Logger = log.Output(out).With().Str("service", serviceValue).Caller().Logger()
 }
 
 func generateSignature(msg []byte, msgID string, privKey tcrypto.PrivKey) ([]byte, error) {

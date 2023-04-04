@@ -45,7 +45,7 @@ func main() {
 
 	// Setup logging
 	golog.SetAllLoggers(golog.LevelInfo)
-	_ = golog.SetLogLevel("tss-lib", "INFO")
+	_ = golog.SetLogLevel("tss-lib", "debug")
 	common.InitLog(logLevel, pretty, "tss_service")
 
 	// Setup Bech32 Prefixes

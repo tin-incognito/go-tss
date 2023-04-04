@@ -109,8 +109,6 @@ func InitConfig() error {
 
 	c.readFromFlag()
 
-	fmt.Println("c.LogLevel:", c.LogLevel)
-
 	return nil
 }
 

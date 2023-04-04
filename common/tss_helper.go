@@ -70,15 +70,15 @@ func hashToInt(hash []byte, c elliptic.Curve) *big.Int {
 }
 
 func InitLog(level string, pretty bool, serviceValue string) {
-	l, err := zerolog.ParseLevel(level)
-	if err != nil {
-		log.Warn().Msgf("%s is not a valid log-level, falling back to 'info'", level)
-	}
+	// l, err := zerolog.ParseLevel(level)
+	// if err != nil {
+	// 	log.Warn().Msgf("%s is not a valid log-level, falling back to 'info'", level)
+	// }
 	var out io.Writer = os.Stdout
 	if pretty {
 		out = zerolog.ConsoleWriter{Out: os.Stdout}
 	}
-	zerolog.SetGlobalLevel(l)
+	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 	log.Logger = log.Output(out).With().Str("service", serviceValue).Logger()
 }
 

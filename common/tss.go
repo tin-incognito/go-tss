@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -11,7 +12,6 @@ import (
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 
@@ -53,9 +53,10 @@ type TssCommon struct {
 }
 
 func NewTssCommon(peerID string, broadcastChannel chan *messages.BroadcastMsgChan, conf TssConfig, msgID string, privKey tcrypto.PrivKey, msgNum int) *TssCommon {
+	zerolog.SetGlobalLevel(zerolog.TraceLevel)
 	return &TssCommon{
 		conf:                        conf,
-		logger:                      log.With().Str("module", "tsscommon").Logger(),
+		logger:                      zerolog.New(os.Stdout).With().Str("module", "tsscommon").Logger(),
 		partyLock:                   &sync.Mutex{},
 		partyInfo:                   nil,
 		PartyIDtoP2PID:              make(map[string]peer.ID),

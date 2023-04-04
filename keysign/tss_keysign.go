@@ -159,6 +159,7 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 	results, err := tKeySign.processKeySign(len(msgsToSign), errCh, outCh, endCh)
 	if err != nil {
 		close(tKeySign.commStopChan)
+		fmt.Println(fmt.Errorf("fail to process key sign: %w", err))
 		return nil, fmt.Errorf("fail to process key sign: %w", err)
 	}
 	fmt.Println(306)

@@ -197,6 +197,7 @@ func (s *SignatureNotifier) removeNotifier(n *Notifier) {
 
 // WaitForSignature wait until keysign finished and signature is available
 func (s *SignatureNotifier) WaitForSignature(messageID string, message [][]byte, poolPubKey string, timeout time.Duration, sigChan chan string, tWg *sync.WaitGroup) ([]*common.ECSignature, error) {
+
 	n, err := NewNotifier(messageID, message, poolPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("fail to create notifier")

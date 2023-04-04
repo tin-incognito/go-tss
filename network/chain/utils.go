@@ -55,7 +55,7 @@ func NewBaseChain(cfg ChainConfig) *BaseChain {
 
 func InitChains() map[string]Chain {
 
-	wg = &sync.WaitGroup{}
+	// wg = &sync.WaitGroup{}
 	// Load from database here if bridge network has start then no need to add to wait group here
 	// wg.Add(1)
 

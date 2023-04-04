@@ -41,7 +41,7 @@ func (b *Btc) Start() error {
 }
 
 func (b *Btc) Scan() error {
-	wg.Wait()
+	// wg.Wait()
 
 	//TODO: @thach scan external network here then return value to TxsQueue channel
 

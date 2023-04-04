@@ -91,7 +91,7 @@ func (i *Incognito) ParseAndProcessInstructions(beaconHeight uint64) {
 				fmt.Println("receive start network instruction")
 				//TODO: Start network
 				// Check for valid bridge pubkey here
-				wg.Done() // Incognito has start network start producing block now
+				// wg.Done() // Incognito has start network start producing block now
 			case "201":
 				//TODO: unshield instruction
 			}

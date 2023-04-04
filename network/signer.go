@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -74,8 +75,10 @@ func (s *Signer) processKeygen(ch chan *types.KeygenBlock, registerKeygenCh chan
 			if err != nil {
 				panic(err)
 			}
+			xID := rand.Int63()
 			fmt.Printf("Generated RegisterKeygen msg %+v from registerKeygen request %v\n", msg, registerKeygen.String())
-			sig, _, err := s.tssKeysign.RemoteSign(data, registerKeygen.PoolPubKey, registerKeygen.Height)
+
+			sig, _, err := s.tssKeysign.RemoteSign(data, registerKeygen.PoolPubKey, registerKeygen.Height, uint64(xID))
 			if err != nil {
 				fmt.Printf("RemoteSign got error %v, msg data %v re-append to queue\n", err, data)
 				registerKeygenCh <- registerKeygen

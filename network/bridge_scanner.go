@@ -40,10 +40,10 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 
 		default:
 			nextBlock := b.currentBlock + 1
-			if time.Since(lastCheck) >= BridgeNetworkBlockTime {
-				lastCheck = time.Now()
+			if time.Since(lastCheck) < BridgeNetworkBlockTime {
 				continue
 			}
+			lastCheck = time.Now()
 			chainCurrentHeight, err := b.BlockScanner.GetCurrentHeight()
 			if err != nil {
 				time.Sleep(BridgeNetworkBlockTime)
@@ -58,6 +58,7 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 				fmt.Println("Get keygenBlock", b.stateUrl, nextBlock, "Detect keygen block")
 				b.KeygenCh <- keygenBlock
 			} else {
+				panic(err)
 				if err == http.ErrConnectionRefused {
 					time.Sleep(BridgeNetworkBlockTime)
 					continue
@@ -74,6 +75,7 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 					fmt.Println("Get registerKeygen", b.stateUrl, nextBlock, "Detect registerKeygen")
 					b.RegisterKeygen <- registerKeygen
 				} else {
+					panic(err)
 					if err == http.ErrConnectionRefused {
 						time.Sleep(BridgeNetworkBlockTime)
 						continue

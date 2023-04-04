@@ -202,8 +202,8 @@ func (t *TssServer) updateKeySignResult(result keysign.Response, timeSpent time.
 	t.tssMetrics.UpdateKeySign(timeSpent, false)
 }
 
-func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
-	fmt.Printf("Perform keysign for req %+v\n", req)
+func (t *TssServer) KeySign(req keysign.Request, id uint64) (keysign.Response, error) {
+	fmt.Printf("Perform keysign for ID %v\n", id)
 	t.logger.Info().Str("pool pub key", req.PoolPubKey).
 		Str("signer pub keys", strings.Join(req.SignerPubKeys, ",")).
 		Str("msg", strings.Join(req.Messages, ",")).
@@ -226,7 +226,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 		t.stateManager,
 		len(req.Messages),
 	)
-	fmt.Printf("keysignInstance tss common %+v\n", keysignInstance.GetTssCommonStruct())
+	fmt.Printf("id %v keysignInstance tss common %+v\n", id, keysignInstance.GetTssCommonStruct())
 
 	keySignChannels := keysignInstance.GetTssKeySignChannels()
 	t.p2pCommunication.SetSubscribe(messages.TSSKeySignMsg, msgID, keySignChannels)
@@ -249,7 +249,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 	if err != nil {
 		return emptyResp, fmt.Errorf("fail to get local keygen state: %w", err)
 	}
-	fmt.Printf("got Local state %+v\n", localStateItem)
+	fmt.Printf("id %v got Local state %+v\n", id, localStateItem)
 
 	var msgsToSign [][]byte
 	for _, val := range req.Messages {
@@ -334,7 +334,7 @@ func (t *TssServer) KeySign(req keysign.Request) (keysign.Response, error) {
 
 	// we generate the signature ourselves
 	go func(tWg *sync.WaitGroup) {
-		tWg.Wait()
+		// tWg.Wait()
 		fmt.Println("Start generateSignature")
 		defer wg.Done()
 		generatedSig, errGen = t.generateSignature(msgID, msgsToSign, req, threshold, localStateItem.ParticipantKeys, localStateItem, blameMgr, keysignInstance, sigChan)

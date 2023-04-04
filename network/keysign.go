@@ -43,6 +43,7 @@ type TssKeySignResult struct {
 }
 
 type TssKeySignTask struct {
+	ID          uint64
 	PoolPubKey  string
 	Msg         string
 	BlockHeight int64
@@ -56,7 +57,7 @@ func (ks *Keysign) Start() {
 
 }
 
-func (ks *Keysign) RemoteSign(msg []byte, poolPubKey string, blockHeight int64) ([]byte, []byte, error) {
+func (ks *Keysign) RemoteSign(msg []byte, poolPubKey string, blockHeight int64, signID uint64) ([]byte, []byte, error) {
 	c := config.GetConfig()
 	if len(msg) == 0 {
 		return nil, nil, nil
@@ -67,14 +68,15 @@ func (ks *Keysign) RemoteSign(msg []byte, poolPubKey string, blockHeight int64) 
 		Msg:         encodedMsg,
 		Resp:        make(chan TssKeySignResult, 1),
 		BlockHeight: blockHeight,
+		ID:          signID,
 	}
-	fmt.Printf("Create task %+v and send to queue\n", task)
+	fmt.Printf("SignID: %v Create task %+v and send to queue\n", signID, task)
 	ks.taskQueue <- &task
 	select {
 	case resp := <-task.Resp:
-		fmt.Println("Received tss keysign task response")
+		fmt.Printf("Received tss keysign task response from taskID %v\n", task.ID)
 		if resp.Err != nil {
-			return nil, nil, fmt.Errorf("fail to tss sign: %w", resp.Err)
+			return nil, nil, fmt.Errorf("fail to tss sign: %w, task %v", resp.Err, task.ID)
 		}
 
 		if len(resp.R) == 0 && len(resp.S) == 0 {
@@ -84,15 +86,15 @@ func (ks *Keysign) RemoteSign(msg []byte, poolPubKey string, blockHeight int64) 
 		//s.logger.Debug().Str("R", resp.R).Str("S", resp.S).Str("recovery", resp.RecoveryID).Msg("tss result")
 		data, err := getSignature(resp.R, resp.S)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fail to decode tss signature: %w", err)
+			return nil, nil, fmt.Errorf("fail to decode tss signature: %w, taskID %v", err, task.ID)
 		}
 		bRecoveryId, err := base64.StdEncoding.DecodeString(resp.RecoveryID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fail to decode recovery id: %w", err)
+			return nil, nil, fmt.Errorf("fail to decode recovery id: %w, taskID %v", err, task.ID)
 		}
 		return data, bRecoveryId, nil
 	case <-time.After(c.TssConfig.KeySignTimeout):
-		return nil, nil, fmt.Errorf("TIMEOUT: fail to sign message:%s after %d seconds", encodedMsg, c.TssConfig.KeySignTimeout/time.Second)
+		return nil, nil, fmt.Errorf("TIMEOUT: fail to sign message:%s after %d seconds, signID %v", encodedMsg, c.TssConfig.KeySignTimeout/time.Second, signID)
 	}
 }
 
@@ -137,7 +139,7 @@ func (ks *Keysign) processKeySignTasks() {
 			// requested to exit
 			return
 		case t := <-ks.taskQueue:
-			fmt.Printf("task %v Enter task queue\n", t.Msg)
+			fmt.Printf("task %v Enter task queue\n", t.ID)
 			taskLock.Lock()
 			_, ok := tasks[t.PoolPubKey]
 			if !ok {
@@ -158,6 +160,7 @@ func (ks *Keysign) processKeySignTasks() {
 			for k, v := range tasks {
 				fmt.Printf("Pool Pubkey %v, value %+v, threadID %v\n", k, v, xID)
 				if len(v) == 0 {
+					fmt.Printf("Len value is 0, Pool Pubkey %v, value %+v, threadID %v\n", k, v, xID)
 					delete(tasks, k)
 					continue
 				}
@@ -176,7 +179,7 @@ func (ks *Keysign) processKeySignTasks() {
 				signingTask := v[:totalTasks]
 				tasks[k] = v[totalTasks:]
 				fmt.Printf("Perform signing task %v %+v xID %v\n", k, signingTask, xID)
-				go ks.toLocalTSSSigner(k, signingTask)
+				go ks.toLocalTSSSigner(k, signingTask, uint64(xID))
 			}
 			taskLock.Unlock()
 		}
@@ -184,12 +187,13 @@ func (ks *Keysign) processKeySignTasks() {
 }
 
 // toLocalTSSSigner will send the request to local signer
-func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) {
-	fmt.Println("toLocalTSSSigner")
+func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask, ID uint64) {
+	fmt.Printf("xID %v toLocalTSSSigner\n", ID)
 	defer ks.wg.Done()
 	var msgToSign []string
 	var blockHeight int64
 	for _, item := range tasks {
+		fmt.Printf("Get msg %v from task %v to sign\n", item.Msg, item.ID)
 		msgToSign = append(msgToSign, item.Msg)
 		blockHeight = item.BlockHeight
 	}
@@ -213,10 +217,10 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) 
 	//s.logger.Info().Msgf("msgToSign to tss Local node PoolPubKey: %s, Messages: %+v, block height: %d", tssMsg.PoolPubKey, tssMsg.Messages, tssMsg.BlockHeight)
 
 	fmt.Println(0)
-	keySignResp, err := ks.server.KeySign(tssMsg)
+	keySignResp, err := ks.server.KeySign(tssMsg, ID)
 	if err != nil {
 		//s.setTssKeySignTasksFail(tasks, fmt.Errorf("fail tss keysign: %w", err))
-		fmt.Printf("Can not sign task %v msgs %v, err: %v\n", tssMsg.PoolPubKey, tssMsg.Messages, err)
+		fmt.Printf("Can not sign task %v msgs %v, err: %v, xID %v\n", tssMsg.PoolPubKey, tssMsg.Messages, err, ID)
 		return
 	}
 	fmt.Println(1)
@@ -226,6 +230,7 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) 
 		//s.logger.Info().Msgf("response: %+v", keySignResp)
 		// success
 		for _, t := range tasks {
+			fmt.Printf("1. ks resp %+v, task %v", keySignResp, t.ID)
 			found := false
 			for _, sig := range keySignResp.Signatures {
 				if t.Msg == sig.Msg {
@@ -248,7 +253,7 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) 
 		}
 		return
 	}
-	fmt.Println(3)
+	// fmt.Println(3)
 
 	// copy blame to our own struct
 	/*blame := types.Blame{*/
@@ -257,7 +262,7 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask) 
 	/*//BlameNodes: make([]types.Node, len(keySignResp.Blame.BlameNodes)),*/
 	/*}*/
 
-	fmt.Println(4)
+	// fmt.Println(4)
 
 	//fmt.Println("keySignResp.Blame.BlameNodes:", keySignResp.Blame.BlameNodes)
 	/*for i, n := range keySignResp.Blame.BlameNodes {*/

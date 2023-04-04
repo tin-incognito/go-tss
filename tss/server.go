@@ -11,5 +11,5 @@ type Server interface {
 	Stop()
 	GetLocalPeerID() string
 	Keygen(req keygen.Request) (keygen.Response, error)
-	KeySign(req keysign.Request) (keysign.Response, error)
+	KeySign(req keysign.Request, ID uint64) (keysign.Response, error)
 }

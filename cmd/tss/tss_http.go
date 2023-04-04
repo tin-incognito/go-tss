@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -106,8 +107,9 @@ func (t *TssHttpServer) keySignHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	t.logger.Info().Msgf("request:%+v", keySignReq)
-	signResp, err := t.tssServer.KeySign(keySignReq)
+	xID := rand.Int63()
+	fmt.Printf("request:%+v, xID %v\n", keySignReq, xID)
+	signResp, err := t.tssServer.KeySign(keySignReq, uint64(xID))
 	if err != nil {
 		t.logger.Error().Err(err).Msg("fail to key sign")
 		w.WriteHeader(http.StatusInternalServerError)

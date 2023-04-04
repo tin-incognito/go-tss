@@ -57,6 +57,9 @@ func (b *BridgeScanner) scanKeygenBlock() error {
 			if err == nil {
 				fmt.Println("Get keygenBlock", b.stateUrl, nextBlock, "Detect keygen block")
 				b.KeygenCh <- keygenBlock
+				b.currentBlock = nextBlock
+				time.Sleep(BridgeNetworkBlockTime)
+				continue
 			} else {
 				panic(err)
 				if err == http.ErrConnectionRefused {

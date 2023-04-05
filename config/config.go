@@ -60,7 +60,7 @@ type BridgeConfig struct {
 	RpcUrl         string `mapstructure:"rpc_url"`
 	RelayerAddress string `mapstructure:"relayer_address"` // TODO: This is the bad way, try to improve later
 	SignerName     string
-	SignerPasswd   string // TODO: This is the bad way, try to improve later
+	SignerPasswd   string
 }
 
 type ChainConfig struct {

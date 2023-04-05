@@ -216,14 +216,12 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask, 
 
 	//s.logger.Info().Msgf("msgToSign to tss Local node PoolPubKey: %s, Messages: %+v, block height: %d", tssMsg.PoolPubKey, tssMsg.Messages, tssMsg.BlockHeight)
 
-	fmt.Println(0)
 	keySignResp, err := ks.server.KeySign(tssMsg, ID)
 	if err != nil {
 		//s.setTssKeySignTasksFail(tasks, fmt.Errorf("fail tss keysign: %w", err))
 		fmt.Printf("Can not sign task %v msgs %v, err: %v, xID %v\n", tssMsg.PoolPubKey, tssMsg.Messages, err, ID)
 		return
 	}
-	fmt.Println(1)
 
 	// 1 means success,2 means fail , 0 means NA
 	if keySignResp.Status == 1 && len(keySignResp.Blame.BlameNodes) == 0 {

@@ -340,6 +340,8 @@ func (t *TssCommon) ProcessOneMessage(wrappedMsg *messages.WrappedMessage, peerI
 		return errors.New("invalid wireMessage")
 	}
 
+	t.logger.Info().Msgf("type: wrappedMsg.MessageType %d\n", wrappedMsg.MessageType)
+
 	switch wrappedMsg.MessageType {
 	case messages.TSSKeyGenMsg, messages.TSSKeySignMsg:
 		var wireMsg messages.WireMessage

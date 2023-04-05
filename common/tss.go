@@ -737,7 +737,7 @@ func (t *TssCommon) receiverBroadcastHashToPeers(wireMsg *messages.WireMessage, 
 
 // processTSSMsg
 func (t *TssCommon) processTSSMsg(wireMsg *messages.WireMessage, msgType messages.THORChainTSSMessageType, forward bool) error {
-	t.logger.Debug().Msg("process wire message")
+	t.logger.Debug().Msgf("process wire message %v %v %v", string(wireMsg.Message), msgType.String(), forward)
 	defer t.logger.Debug().Msg("finish process wire message")
 
 	if wireMsg == nil || wireMsg.Routing == nil || wireMsg.Routing.From == nil {
@@ -755,7 +755,7 @@ func (t *TssCommon) processTSSMsg(wireMsg *messages.WireMessage, msgType message
 	pk = keyBytes
 	ok = verifySignature(pk, wireMsg.Message, wireMsg.Sig, t.msgID)
 	if !ok {
-		t.logger.Error().Msgf("fail to verify the signature")
+		t.logger.Error().Msgf("fail to verify the signature %v, pk %v", string(wireMsg.Message), pk.String())
 		return errors.New("signature verify failed")
 	}
 

@@ -1,11 +1,12 @@
 package p2p
 
 import (
+	"os"
+
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type ResourceMetricReporter struct {
@@ -14,7 +15,7 @@ type ResourceMetricReporter struct {
 
 func NewResourceMetricReporter() *ResourceMetricReporter {
 	return &ResourceMetricReporter{
-		logger: log.With().Str("module", "p2p_resource").Logger(),
+		logger: zerolog.New(os.Stdout).With().Str("module", "p2p_resource").Logger(),
 	}
 }
 

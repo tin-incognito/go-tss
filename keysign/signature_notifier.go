@@ -3,6 +3,7 @@ package keysign
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 
 	"gitlab.com/thorchain/tss/go-tss/messages"
 	"gitlab.com/thorchain/tss/go-tss/p2p"
@@ -41,7 +41,7 @@ type SignatureNotifier struct {
 // NewSignatureNotifier create a new instance of SignatureNotifier
 func NewSignatureNotifier(host host.Host) *SignatureNotifier {
 	s := &SignatureNotifier{
-		logger:       log.With().Str("module", "signature_notifier").Logger(),
+		logger:       zerolog.New(os.Stdout).With().Str("module", "signature_notifier").Logger(),
 		host:         host,
 		notifierLock: &sync.Mutex{},
 		notifiers:    make(map[string]*Notifier),
@@ -55,7 +55,7 @@ func NewSignatureNotifier(host host.Host) *SignatureNotifier {
 // HandleStream handle signature notify stream
 func (s *SignatureNotifier) handleStream(stream network.Stream) {
 	remotePeer := stream.Conn().RemotePeer()
-	logger := s.logger.With().Str("remote peer", remotePeer.String()).Logger()
+	logger := zerolog.New(os.Stdout).With().Str("remote peer", remotePeer.String()).Logger()
 	logger.Debug().Msg("reading signature notifier message")
 	payload, err := p2p.ReadStreamWithBuffer(stream)
 	if err != nil {

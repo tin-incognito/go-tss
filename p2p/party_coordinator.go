@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"google.golang.org/protobuf/proto"
 
 	"gitlab.com/thorchain/tss/go-tss/conversion"
@@ -44,7 +44,7 @@ func NewPartyCoordinator(host host.Host, timeout time.Duration) *PartyCoordinato
 		timeout = 10 * time.Second
 	}
 	pc := &PartyCoordinator{
-		logger:             log.With().Str("module", "party_coordinator").Logger(),
+		logger:             zerolog.New(os.Stdout).With().Str("module", "party_coordinator").Logger(),
 		host:               host,
 		stopChan:           make(chan struct{}),
 		timeout:            timeout,

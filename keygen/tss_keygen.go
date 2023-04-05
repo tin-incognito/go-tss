@@ -3,6 +3,7 @@ package keygen
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	bkg "github.com/binance-chain/tss-lib/ecdsa/keygen"
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 
 	"gitlab.com/thorchain/tss/go-tss/blame"
@@ -44,7 +44,7 @@ func NewTssKeyGen(localP2PID string,
 	privateKey tcrypto.PrivKey,
 	p2pComm *p2p.Communication) *TssKeyGen {
 	return &TssKeyGen{
-		logger: log.With().
+		logger: zerolog.New(os.Stdout).With().
 			Str("module", "keygen").
 			Str("msgID", msgID).Logger(),
 		localNodePubKey: localNodePubKey,

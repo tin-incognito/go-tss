@@ -108,6 +108,7 @@ func SetupIDMaps(parties map[string]*btss.PartyID, partyIDtoP2PID map[string]pee
 }
 
 func GetParties(keys []string, localPartyKey string) ([]*btss.PartyID, *btss.PartyID, error) {
+	fmt.Printf("Picking parties from keys %+v, local party key %v\n", keys, localPartyKey)
 	var localPartyID *btss.PartyID
 	var unSortedPartiesID []*btss.PartyID
 	sort.Strings(keys)

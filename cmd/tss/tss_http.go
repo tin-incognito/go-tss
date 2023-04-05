@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -29,7 +30,7 @@ type TssHttpServer struct {
 // NewTssHttpServer should only listen to the loopback
 func NewTssHttpServer(tssAddr string, t tss.Server) *TssHttpServer {
 	hs := &TssHttpServer{
-		logger:    log.With().Str("module", "http").Logger(),
+		logger:    zerolog.New(os.Stdout).With().Str("module", "http").Caller().Logger(),
 		tssServer: t,
 	}
 	s := &http.Server{

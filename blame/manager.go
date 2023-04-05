@@ -1,12 +1,12 @@
 package blame
 
 import (
+	"os"
 	"sync"
 
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type Manager struct {
@@ -27,7 +27,7 @@ type Manager struct {
 func NewBlameManager() *Manager {
 	blame := NewBlame("", nil)
 	return &Manager{
-		logger:            log.With().Str("module", "blame_manager").Logger(),
+		logger:            zerolog.New(os.Stdout).With().Str("module", "blame_manager").Logger(),
 		partyInfo:         nil,
 		PartyIDtoP2PID:    make(map[string]peer.ID),
 		lastUnicastPeer:   make(map[string][]peer.ID),

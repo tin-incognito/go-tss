@@ -3,6 +3,7 @@ package tss
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -108,7 +109,7 @@ func NewTss(
 	}
 	tssServer := TssServer{
 		conf:              conf,
-		logger:            log.With().Str("module", "tss").Logger(),
+		logger:            zerolog.New(os.Stdout).With().Str("module", "tss").Logger(),
 		p2pCommunication:  comm,
 		localNodePubKey:   pubKey,
 		preParams:         preParams,

@@ -5,12 +5,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -34,7 +34,7 @@ func NewStreamMgr() *StreamMgr {
 	return &StreamMgr{
 		unusedStreams: make(map[string][]network.Stream),
 		streamLocker:  &sync.RWMutex{},
-		logger:        log.With().Str("module", "communication").Logger(),
+		logger:        zerolog.New(os.Stdout).With().Str("module", "communication").Logger(),
 	}
 }
 

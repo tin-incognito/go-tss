@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -23,7 +24,6 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	maddr "github.com/multiformats/go-multiaddr"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 
 	"gitlab.com/thorchain/tss/go-tss/messages"
 )
@@ -80,7 +80,7 @@ func NewCommunication(rendezvous string, bootstrapPeers []Multiaddr, port int, e
 	return &Communication{
 		rendezvous:       rendezvous,
 		bootstrapPeers:   bootstrapPeers,
-		logger:           log.With().Str("module", "communication").Logger(),
+		logger:           zerolog.New(os.Stdout).With().Str("module", "communication").Logger(),
 		listenAddr:       addr,
 		wg:               &sync.WaitGroup{},
 		stopChan:         make(chan struct{}),

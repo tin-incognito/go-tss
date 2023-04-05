@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"os"
 	"sort"
 	"strconv"
 	"sync"
@@ -13,7 +14,6 @@ import (
 	"github.com/binance-chain/tss-lib/ecdsa/signing"
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
 	"go.uber.org/atomic"
 
@@ -41,7 +41,7 @@ func NewTssKeySign(localP2PID string,
 	stopChan chan struct{}, msgID string, privKey tcrypto.PrivKey, p2pComm *p2p.Communication, stateManager storage.LocalStateManager, msgNum int) *TssKeySign {
 	logItems := []string{"keySign", msgID}
 	return &TssKeySign{
-		logger:          log.With().Strs("module", logItems).Logger(),
+		logger:          zerolog.New(os.Stdout).With().Strs("module", logItems).Logger(),
 		tssCommonStruct: common.NewTssCommon(localP2PID, broadcastChan, conf, msgID, privKey, msgNum),
 		stopChan:        stopChan,
 		localParties:    make([]*btss.PartyID, 0),

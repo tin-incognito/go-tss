@@ -1,6 +1,7 @@
 package main
 
 import (
+	brdCommon "bridge/x/bridge/common"
 	"flag"
 	"fmt"
 	"log"
@@ -9,9 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/types/bech32/legacybech32"
 	golog "github.com/ipfs/go-log"
 	"gitlab.com/thorchain/binance-sdk/common/types"
-
 	"gitlab.com/thorchain/tss/go-tss/common"
 	"gitlab.com/thorchain/tss/go-tss/config"
 	"gitlab.com/thorchain/tss/go-tss/conversion"
@@ -101,6 +103,13 @@ func main() {
 			panic(err)
 		}
 	}()
+
+	pubkey := coskey.PubKey{
+		Key: priKey.PubKey().Bytes()[:],
+	}
+	bech32PubKey, _ := legacybech32.MarshalPubKey(legacybech32.AccPK, &pubkey)
+	pk, _ := brdCommon.NewPubKey(bech32PubKey)
+	fmt.Printf("pubkey of me %v: %v - %v\n", config.GetConfig().BridgeConfig.SignerName, bech32PubKey, pk)
 
 	signer, err := network.NewSigner(
 		tss,

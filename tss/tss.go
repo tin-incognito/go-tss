@@ -79,6 +79,9 @@ func NewTss(
 	if err != nil {
 		return nil, fmt.Errorf("fail to create communication layer: %w", err)
 	}
+	pID := comm.GetLocalPeerID()
+	fmt.Printf("Map pubkey %v - %v %+v \n", pubKey, pID, pk)
+
 	// When using the keygen party it is recommended that you pre-compute the
 	// "safe primes" and Paillier secret beforehand because this can take some
 	// time.

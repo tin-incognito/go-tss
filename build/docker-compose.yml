@@ -14,6 +14,8 @@ services:
     environment:
       #- PRIVKEY=${TSS_0}
       - PRIVKEY=ZThiMDAxOTk2MDc4ODk3YWE0YThlMjdkMWY0NjA1MTAwZDgyNDkyYzdhNmMwZWQ3MDBhMWIyMjNmNGMzYjVhYg==
+      - SIGNER_NAME=validator0
+      - SIGNER_PASSWORD=11234566
       - NET=testnet
     command: /go/bin/start.bash
     networks:
@@ -33,6 +35,8 @@ services:
     environment:
       - PRIVKEY=ZTc2ZjI5OTIwOGVlMDk2N2M3Yzc1MjYyODQ0OGUyMjE3NGJiOGRmNGQyZmVmODg0NzQwNmUzYTk1YmQyODlmNA==
       - NET=testnet
+      - SIGNER_NAME=validator1
+      - SIGNER_PASSWORD=11234566
     depends_on:
       - tss0
     command: /go/bin/start-tss.bash
@@ -53,6 +57,8 @@ services:
     environment:
       - PRIVKEY=MjQ1MDc2MmM4MjU5YjRhZjhhNmFjMmI0ZDBkNzBkOGE1ZTBmNDQ5NGI4NzM4OTYyM2E3MmI0OWMzNmE1ODZhNw==
       - NET=testnet
+      - SIGNER_NAME=validator2
+      - SIGNER_PASSWORD=11234566
     depends_on:
       - tss0
     command: /go/bin/start-tss.bash
@@ -72,6 +78,8 @@ services:
     environment:
       - PRIVKEY=YmNiMzA2ODU1NWNjMzk3NDE1OWMwMTM3MDU0NTNjN2YwMzYzZmVhZDE5NmU3NzRhOTMwOWIxN2QyZTQ0MzdkNg==
       - NET=testnet
+      - SIGNER_NAME=validator3
+      - SIGNER_PASSWORD=11234566
     depends_on:
       - tss0
     command: /go/bin/start-tss.bash

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"os"
 	"sort"
 	"strconv"
@@ -82,7 +83,9 @@ func (tKeySign *TssKeySign) startBatchSigning(keySignPartyMap *sync.Map, msgNum 
 
 // signMessage
 func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem storage.KeygenLocalState, parties []string) ([]*tsslibcommon.ECSignature, error) {
-	partiesID, localPartyID, err := conversion.GetParties(parties, localStateItem.LocalPartyKey)
+	uid := rand.Int63()
+	caller := fmt.Sprintf("SignMessage-%v", uid)
+	partiesID, localPartyID, err := conversion.GetParties(parties, localStateItem.LocalPartyKey, caller)
 	fmt.Printf("Start signing total %v message with parties %+v, partiesID %v, local Party ID %v, err %v\n", len(msgsToSign), parties, partiesID, localPartyID, err)
 	if err != nil {
 		return nil, fmt.Errorf("fail to form key sign party: %w", err)
@@ -111,7 +114,9 @@ func (tKeySign *TssKeySign) SignMessage(msgsToSign [][]byte, localStateItem stor
 			return nil, fmt.Errorf("fail to convert msg to hash int: %w", err)
 		}
 		moniker := m.String() + ":" + strconv.Itoa(i)
-		partiesID, eachLocalPartyID, err := conversion.GetParties(parties, localStateItem.LocalPartyKey)
+		uid := rand.Int63()
+		caller := fmt.Sprintf("SignMessage-%v-%v", m, uid)
+		partiesID, eachLocalPartyID, err := conversion.GetParties(parties, localStateItem.LocalPartyKey, caller)
 		fmt.Printf("Get parties %v eachLocalPartyID %v err %v\n", partiesID, eachLocalPartyID, err)
 		ctx := btss.NewPeerContext(partiesID)
 		fmt.Printf("context for partiesID %v is %v\n", partiesID, ctx)

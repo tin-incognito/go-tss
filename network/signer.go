@@ -45,6 +45,8 @@ func (s *Signer) Start() error {
 
 	go s.processKeygen(s.bridgeScanner.KeygenCh, s.bridgeScanner.RegisterKeygen)
 
+	go s.processKeygen(s.bridgeScanner.KeygenCh, s.bridgeScanner.RegisterKeygen)
+
 	go s.signTransactions()
 
 	go s.bridgeScanner.Start()

@@ -251,7 +251,6 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask, 
 		}
 		return
 	}
-	// fmt.Println(3)
 
 	// copy blame to our own struct
 	/*blame := types.Blame{*/
@@ -260,16 +259,12 @@ func (ks *Keysign) toLocalTSSSigner(poolPubKey string, tasks []*TssKeySignTask, 
 	/*//BlameNodes: make([]types.Node, len(keySignResp.Blame.BlameNodes)),*/
 	/*}*/
 
-	// fmt.Println(4)
-
 	//fmt.Println("keySignResp.Blame.BlameNodes:", keySignResp.Blame.BlameNodes)
 	/*for i, n := range keySignResp.Blame.BlameNodes {*/
 	/*blame.BlameNodes[i].Pubkey = n.Pubkey*/
 	/*blame.BlameNodes[i].BlameData = n.BlameData*/
 	/*blame.BlameNodes[i].BlameSignature = n.BlameSignature*/
 	/*}*/
-
-	fmt.Println(5)
 
 	// Blame need to be passed back to thorchain , so as thorchain can use the information to slash relevant node account
 	//TODO: set key sign task fail here

@@ -252,10 +252,7 @@ func (b *BridgeClient) GetContext() client.Context {
 }
 
 // GetKeyringKeybase return keyring and key info
-func GetKeyringKeybase(chainHomeFolder, signerName, password string) (ckeys.Keyring, error) {
-	if len(signerName) == 0 {
-		return nil, fmt.Errorf("signer name is empty")
-	}
+func GetKeyringKeybase(chainHomeFolder, password string) (ckeys.Keyring, error) {
 	if len(password) == 0 {
 		return nil, fmt.Errorf("password is empty")
 	}

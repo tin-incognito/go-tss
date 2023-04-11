@@ -56,7 +56,7 @@ func main() {
 		types.Network = types.TestNetwork
 	}
 
-	kb, err := network.GetKeyringKeybase("", c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd)
+	kb, err := network.GetKeyringKeybase("", c.BridgeConfig.SignerPasswd)
 	if err != nil {
 		panic(err)
 	}
@@ -69,7 +69,6 @@ func main() {
 		panic(err)
 	}
 	tmPriKey := network.CosmosPrivateKeyToTMPrivateKey(priKey)
-
 	/*myValidator, err := kb.Key("validator3")*/
 	/*if err != nil {*/
 	/*panic(err)*/
@@ -102,38 +101,40 @@ func main() {
 			panic(err)
 		}
 	}()
+	if len(c.BridgeConfig.SignerName) != 0 {
 
-	pubkey := coskey.PubKey{
-		Key: priKey.PubKey().Bytes()[:],
-	}
-	bech32PubKey, _ := legacybech32.MarshalPubKey(legacybech32.AccPK, &pubkey)
-	pk, _ := brdCommon.NewPubKey(bech32PubKey)
-	fmt.Printf("pubkey of me %v: %v - %v\n", config.GetConfig().BridgeConfig.SignerName, bech32PubKey, pk)
+		pubkey := coskey.PubKey{
+			Key: priKey.PubKey().Bytes()[:],
+		}
+		bech32PubKey, _ := legacybech32.MarshalPubKey(legacybech32.AccPK, &pubkey)
+		pk, _ := brdCommon.NewPubKey(bech32PubKey)
+		fmt.Printf("pubkey of me %v: %v - %v\n", config.GetConfig().BridgeConfig.SignerName, bech32PubKey, pk)
 
-	signer, err := network.NewSigner(
-		tss,
-		c.BridgeConfig.BlockUrl, c.BridgeConfig.StateUrl,
-		keys,
-		network.NewBridgeClientConfig(network.NewChainClientConfig(
-			chain.BridgeChainId,
-			c.BridgeConfig.BlockUrl, c.BridgeConfig.StateUrl, c.BridgeConfig.RpcUrl,
-			c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd,
-		), c.BridgeConfig.RelayerAddress),
-	)
+		signer, err := network.NewSigner(
+			tss,
+			c.BridgeConfig.BlockUrl, c.BridgeConfig.StateUrl,
+			keys,
+			network.NewBridgeClientConfig(network.NewChainClientConfig(
+				chain.BridgeChainId,
+				c.BridgeConfig.BlockUrl, c.BridgeConfig.StateUrl, c.BridgeConfig.RpcUrl,
+				c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd,
+			), c.BridgeConfig.RelayerAddress),
+		)
 
-	if err != nil {
-		panic(err)
-	}
-	if err := signer.Start(); err != nil {
-		panic(err)
-	}
-	chains := chain.InitChains()
-	observer, err := network.NewObserver(chains)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := observer.Start(); err != nil {
-		log.Fatal(err)
+		if err != nil {
+			panic(err)
+		}
+		if err := signer.Start(); err != nil {
+			panic(err)
+		}
+		chains := chain.InitChains()
+		observer, err := network.NewObserver(chains)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := observer.Start(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	ch := make(chan os.Signal, 1)

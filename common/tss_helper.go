@@ -17,11 +17,12 @@ import (
 	"github.com/binance-chain/tss-lib/ecdsa/signing"
 	btss "github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
+	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	tcrypto "github.com/tendermint/tendermint/crypto"
-
 	"gitlab.com/thorchain/tss/go-tss/blame"
 	"gitlab.com/thorchain/tss/go-tss/messages"
 )
@@ -83,13 +84,28 @@ func InitLog(level string, pretty bool, serviceValue string) {
 }
 
 func generateSignature(msg []byte, msgID string, privKey tcrypto.PrivKey) ([]byte, error) {
+	pk := coskey.PubKey{
+		Key: privKey.PubKey().Bytes()[:],
+	}
+
+	pubKey, err := sdk.MarshalPubKey(sdk.AccPK, &pk)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("[debugg] Sign msg %v with private key %+v pubkey %v\n", string(msg), privKey, pubKey)
 	var dataForSigning bytes.Buffer
 	dataForSigning.Write(msg)
 	dataForSigning.WriteString(msgID)
-	return privKey.Sign(dataForSigning.Bytes())
+	sig, err := privKey.Sign(dataForSigning.Bytes())
+	fmt.Printf("[debugg] Signed msg %v with sig %+v pubkey %v\n", string(dataForSigning.Bytes()), string(sig), pubKey)
+	return sig, err
 }
 
 func verifySignature(pubKey tcrypto.PubKey, message, sig []byte, msgID string) bool {
+	pk := coskey.PubKey{
+		Key: pubKey.Bytes()[:],
+	}
+	fmt.Printf("[debugg] msg %v signed with signature %+v pubkey %+v\n", string(message), string(sig), pk)
 	var dataForSign bytes.Buffer
 	dataForSign.Write(message)
 	dataForSign.WriteString(msgID)

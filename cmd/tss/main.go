@@ -2,6 +2,9 @@ package main
 
 import (
 	brdCommon "bridge/x/bridge/common"
+	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -68,7 +71,15 @@ func main() {
 	// setup TSS signing
 	priKey, err := keys.GetPrivateKey()
 	if err != nil {
-		tmPriKey, err = conversion.GetPriKey(c.BridgeConfig.SignerPasswd)
+
+		buf := bytes.NewBufferString(c.BridgeConfig.SignerPasswd)
+		// the library used by keyring is using ReadLine , which expect a new line
+		buf.WriteByte('\n')
+		priBytes := buf.Bytes()
+		priHex := hex.EncodeToString(priBytes)
+		priHexStr := base64.StdEncoding.EncodeToString([]byte(priHex))
+		tmPriKey, err = conversion.GetPriKey(priHexStr)
+
 		if err != nil {
 			panic(err)
 		}

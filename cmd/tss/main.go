@@ -13,6 +13,7 @@ import (
 	coskey "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/bech32/legacybech32"
 	golog "github.com/ipfs/go-log"
+	"github.com/tendermint/tendermint/crypto"
 	"gitlab.com/thorchain/binance-sdk/common/types"
 	"gitlab.com/thorchain/tss/go-tss/common"
 	"gitlab.com/thorchain/tss/go-tss/config"
@@ -63,12 +64,17 @@ func main() {
 
 	keys := network.NewKeys(c.BridgeConfig.SignerName, c.BridgeConfig.SignerPasswd, kb)
 
+	var tmPriKey crypto.PrivKey
 	// setup TSS signing
 	priKey, err := keys.GetPrivateKey()
 	if err != nil {
-		panic(err)
+		tmPriKey, err = conversion.GetPriKey(c.BridgeConfig.SignerPasswd)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		tmPriKey = network.CosmosPrivateKeyToTMPrivateKey(priKey)
 	}
-	tmPriKey := network.CosmosPrivateKeyToTMPrivateKey(priKey)
 	/*myValidator, err := kb.Key("validator3")*/
 	/*if err != nil {*/
 	/*panic(err)*/
